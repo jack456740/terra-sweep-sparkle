@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { DeployButton } from "@/components/DeployButton";
 import { RobotStatusCard } from "@/components/RobotStatusCard";
 import { BatteryIndicator } from "@/components/BatteryIndicator";
+import { CleaningProgress } from "@/components/CleaningProgress";
 import { toast } from "sonner";
 
 type RobotStatus = "idle" | "cleaning" | "returning" | "charging" | "offline";
@@ -13,9 +14,11 @@ const Index = () => {
   const [robotStatus, setRobotStatus] = useState<RobotStatus>("idle");
   const [battery, setBattery] = useState(78);
   const [location, setLocation] = useState("Home Base");
+  const [cleaningProgress, setCleaningProgress] = useState(0);
 
   const handleDeploy = () => {
     setDeployState("deploying");
+    setCleaningProgress(0);
     toast.info("Initializing robot systems...");
     
     setTimeout(() => {
@@ -39,7 +42,7 @@ const Index = () => {
     }, 3000);
   };
 
-  // Simulate battery drain when cleaning
+  // Simulate battery drain and progress when cleaning
   useEffect(() => {
     if (robotStatus === "cleaning") {
       const interval = setInterval(() => {
@@ -52,7 +55,17 @@ const Index = () => {
           }
           return prev - 1;
         });
-      }, 5000);
+        
+        setCleaningProgress(prev => {
+          if (prev >= 100) {
+            setRobotStatus("returning");
+            setLocation("Returning...");
+            toast.success("Cleaning complete! Returning to base.");
+            return 100;
+          }
+          return prev + 3;
+        });
+      }, 2000);
       return () => clearInterval(interval);
     }
   }, [robotStatus]);
@@ -71,7 +84,7 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <div className="lg:col-span-1">
             <DeployButton 
               state={deployState}
@@ -85,10 +98,17 @@ const Index = () => {
             <RobotStatusCard status={robotStatus} location={location} />
           </div>
           
-          <div className="lg:col-span-1 md:col-span-2 lg:col-span-1">
+          <div className="lg:col-span-1">
             <BatteryIndicator 
               percentage={battery} 
               isCharging={robotStatus === "charging"} 
+            />
+          </div>
+
+          <div className="lg:col-span-1 md:col-span-2 lg:col-span-1">
+            <CleaningProgress 
+              progress={Math.min(cleaningProgress, 100)} 
+              isActive={robotStatus === "cleaning"} 
             />
           </div>
         </div>
