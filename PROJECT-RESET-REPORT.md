@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Clean Bot is a web-based dashboard and control interface for an autonomous cleaning robot developed at Howard University (Amazon FTR 5). The application provides real-time robot status monitoring, deployment controls, and project information display.
+Clean Bot is an autonomous cleaning robot that collects small trash items and debris from outdoor areas. This application allows user to control the robot from their devices. The app also provides real-time robot status monitoring, deployment controls, and project information display.
 
 **Tech Stack:**
 - Frontend Framework: React 18.3.1
@@ -22,68 +22,7 @@ Clean Bot is a web-based dashboard and control interface for an autonomous clean
 
 ### High-Level Architecture Diagram
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     React Application                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                               │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │              App.tsx (Root Router)                    │   │
-│  │   - QueryClientProvider (React Query)               │   │
-│  │   - TooltipProvider (UI Context)                     │   │
-│  │   - BrowserRouter (React Router)                     │   │
-│  │   - Toast/Sonner Notification System                │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                           ↓                                   │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │           Index Page (Single Page App)               │   │
-│  │  Composes all major sections in sequence            │   │
-│  └──────────────────────────────────────────────────────┘   │
-│      ↓          ↓          ↓          ↓          ↓           │
-│  ┌────────┬──────────┬──────────┬──────────┬──────────────┐ │
-│  │ Nav    │ Hero     │ Team     │ Problem  │ Project      │ │
-│  │Section │ Section  │ Section  │ Section  │ Section      │ │
-│  └────────┴──────────┴──────────┴──────────┴──────────────┘ │
-│      ↓          ↓          ↓                                  │
-│  ┌────────┬──────────┬──────────────────────────────────┐   │
-│  │Dashboard Section  │  User Stories  │  Footer         │   │
-│  └────────┬──────────┴──────────────────────────────────┘   │
-│           ↓                                                   │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │ Dashboard Sub-Components (Robot Control)             │   │
-│  │ - DeployButton        - RobotStatusCard              │   │
-│  │ - BatteryIndicator    - CleaningProgress             │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                               │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  UI Component Library (/src/components/ui)           │   │
-│  │  - 40+ shadcn/ui components (Radix UI primitives)   │   │
-│  │  - Custom hooks: use-toast, use-mobile               │   │
-│  │  - Utilities: cn (classname merger)                  │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                               │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Component Hierarchy
-
-#### Top-Level Structure (Index.tsx)
-
-```
-Index (pages/Index.tsx)
-├── Navigation
-├── HeroSection
-├── TeamSection
-├── ProblemSection
-├── ProjectSection
-├── DashboardSection (Interactive Robot Control)
-│   ├── DeployButton
-│   ├── RobotStatusCard
-│   ├── BatteryIndicator
-│   └── CleaningProgress
-├── UserStoriesSection
-└── Footer
-```
+[![](https://mermaid.ink/img/pako:eNp1lF-PojAUxb9K02c1IDNCeNhk1ZjZZDOZHWdftvhQpYus0ktK2Yxr_O7bP1AB1QToOffcQukPz3gHKcMxTngmaLlHH8uEI1TVWytXArhkPNUmQl_LkqgDLaAogTMuN9b_xlP2ScwZvdGMNfYryBXUPCXtoFt0t3CTVbaA0AujKRPEXjat-0r_5hmVOXByHW6uPQLWbGfKeowa4QIfjBZtQI9vAm8CtkfmMo28F_ujrE5My5vYklb7LVCRtkFn3ERXAFIt116uE7DyCKd5LaVuNgJZ5SLvsAW5llTW1UJNTIxG1kDacck5lWruk9qhfEclCNIYyDkuujgyynOeqYVlglUVaQ3UOk20ocJceszM6e7gkPlRq9ssjrnaX2LGyIpmkndGd9L4xAxtvi1CrV-MLVjRVD6AVpKYM1qfKsmKzf1n-SnzYy5z1rClZUWseUKrmpudaFf0AnBQ660rCYUVTeF7viXqEFQ_vsO1f0v9XYzHX-y30DVa-Lten3n74WjfIt_3rrAPs474fqFDer_QJ_ym1sG6Xxuy3K9abrU3zNnmDscPQwOSH-aGHD8MDinuvvwOkl3bAtZ1DF_auG6X8RUKd1zD1h3fgJRwPMKZyFMcS1GzES6YKKiW-Kx7Eiz3rGAJjtUwpeKQqH_ki-opKf8FULRtAupsj-Pf9FgpVZcplWyZUwW7i9BawvrEd65FIcrEQiEocRyEkZkTx2f8ieOx70WTKPSCp-A5nHne03Q2wicc-9PpJPSD2WwWqJ9S0WWE_5nn8CdBGEbe1A-C55nnR154-Q-fFBtn?type=png)](https://mermaid.live/edit#pako:eNp1lF-PojAUxb9K02c1IDNCeNhk1ZjZZDOZHWdftvhQpYus0ktK2Yxr_O7bP1AB1QToOffcQukPz3gHKcMxTngmaLlHH8uEI1TVWytXArhkPNUmQl_LkqgDLaAogTMuN9b_xlP2ScwZvdGMNfYryBXUPCXtoFt0t3CTVbaA0AujKRPEXjat-0r_5hmVOXByHW6uPQLWbGfKeowa4QIfjBZtQI9vAm8CtkfmMo28F_ujrE5My5vYklb7LVCRtkFn3ERXAFIt116uE7DyCKd5LaVuNgJZ5SLvsAW5llTW1UJNTIxG1kDacck5lWruk9qhfEclCNIYyDkuujgyynOeqYVlglUVaQ3UOk20ocJceszM6e7gkPlRq9ssjrnaX2LGyIpmkndGd9L4xAxtvi1CrV-MLVjRVD6AVpKYM1qfKsmKzf1n-SnzYy5z1rClZUWseUKrmpudaFf0AnBQ660rCYUVTeF7viXqEFQ_vsO1f0v9XYzHX-y30DVa-Lten3n74WjfIt_3rrAPs474fqFDer_QJ_ym1sG6Xxuy3K9abrU3zNnmDscPQwOSH-aGHD8MDinuvvwOkl3bAtZ1DF_auG6X8RUKd1zD1h3fgJRwPMKZyFMcS1GzES6YKKiW-Kx7Eiz3rGAJjtUwpeKQqH_ki-opKf8FULRtAupsj-Pf9FgpVZcplWyZUwW7i9BawvrEd65FIcrEQiEocRyEkZkTx2f8ieOx70WTKPSCp-A5nHne03Q2wicc-9PpJPSD2WwWqJ9S0WWE_5nn8CdBGEbe1A-C55nnR154-Q-fFBtn)
 
 ### Component Breakdown
 
@@ -476,148 +415,14 @@ robot: idle
 
 5. **Testing Limitations**
    - Client-side simulation can't test actual robot behavior
-   - No E2E testing with real hardware
+   - No end-to-end testing with real hardware
 
 ### Known Constraints
 
 - **No Mobile Optimization**: UI components present, but not fully tested on mobile
 - **No Offline Support**: App requires internet (no service worker)
 - **No Dark Mode**: next-themes present but not implemented
-- **No Internationalization**: English-only UI
 - **No Analytics**: No user tracking or metrics
-
----
-
-## Recommendations for Future Development
-
-### Phase 1: Foundation (Critical)
-- [ ] Implement backend API integration layer
-- [ ] Add real robot WebSocket/REST communication
-- [ ] Implement proper error handling and error boundaries
-- [ ] Add authentication/authorization system
-- [ ] Enable strict TypeScript configuration
-
-### Phase 2: Infrastructure
-- [ ] Set up state management (Zustand or Context API)
-- [ ] Implement localStorage persistence or server sessions
-- [ ] Add comprehensive testing (Jest + React Testing Library)
-- [ ] Remove unused UI components or document intent
-- [ ] Set up CI/CD pipeline with linting and testing
-
-### Phase 3: Features
-- [ ] Multi-robot support and management UI
-- [ ] Historical data tracking and analytics dashboard
-- [ ] Real-time WebSocket communication for live updates
-- [ ] Scheduled cleaning/automation features
-- [ ] User preferences and settings
-
-### Phase 4: Polish
-- [ ] Comprehensive accessibility audit (WCAG 2.1 AA)
-- [ ] Performance optimization (code splitting, lazy loading)
-- [ ] Mobile-first responsive design review
-- [ ] Dark mode implementation
-- [ ] Internationalization (i18n) setup
-- [ ] Documentation and API reference
-
----
-
-## File Structure Reference
-
-```
-src/
-├── App.tsx                          # Root router setup
-├── main.tsx                         # Entry point
-├── App.css                          # Global styles
-├── index.css                        # Tailwind imports
-├── vite-env.d.ts                   # Vite type definitions
-│
-├── pages/
-│   ├── Index.tsx                   # Main page composing all sections
-│   └── NotFound.tsx                # 404 page
-│
-├── components/
-│   ├── Navigation.tsx              # Sticky header nav
-│   ├── Header.tsx                  # Additional header component
-│   ├── HeroSection.tsx             # Landing hero
-│   ├── TeamSection.tsx             # Team profiles
-│   ├── ProblemSection.tsx          # Problem statement
-│   ├── ProjectSection.tsx          # Project details
-│   ├── UserStoriesSection.tsx      # User stories
-│   ├── Footer.tsx                  # Footer section
-│   │
-│   ├── DashboardSection.tsx        # Main robot control container
-│   ├── DeployButton.tsx            # Robot deploy/stop button
-│   ├── RobotStatusCard.tsx         # Robot status display
-│   ├── BatteryIndicator.tsx        # Battery level display
-│   ├── CleaningProgress.tsx        # Progress visualization
-│   │
-│   ├── NavLink.tsx                 # Navigation link component
-│   │
-│   └── ui/                         # shadcn/ui component library (40+ components)
-│       ├── accordion.tsx
-│       ├── alert-dialog.tsx
-│       ├── alert.tsx
-│       ├── aspect-ratio.tsx
-│       ├── avatar.tsx
-│       ├── badge.tsx
-│       ├── ... (30+ more UI components)
-│       ├── button.tsx
-│       ├── card.tsx
-│       ├── dialog.tsx
-│       ├── form.tsx
-│       ├── input.tsx
-│       ├── label.tsx
-│       ├── progress.tsx
-│       ├── select.tsx
-│       ├── table.tsx
-│       ├── tabs.tsx
-│       ├── toast.tsx
-│       ├── toaster.tsx
-│       ├── tooltip.tsx
-│       ├── use-toast.ts
-│       └── ... (additional UI exports)
-│
-├── hooks/
-│   ├── use-toast.ts                # Toast notification hook
-│   └── use-mobile.tsx              # Mobile detection hook
-│
-├── lib/
-│   └── utils.ts                    # cn() classname merger utility
-│
-public/
-└── robots.txt
-
-Configuration Files:
-├── vite.config.ts                  # Vite build configuration
-├── tsconfig.json                   # TypeScript base config
-├── tsconfig.app.json               # App TypeScript config
-├── tsconfig.node.json              # Node TypeScript config
-├── tailwind.config.ts              # Tailwind CSS config
-├── postcss.config.js               # PostCSS config
-├── eslint.config.js                # ESLint configuration
-├── components.json                 # shadcn/ui config
-├── package.json                    # Dependencies
-└── bun.lockb                        # Lock file (using Bun package manager)
-```
-
----
-
-## Conclusion
-
-The Clean Bot frontend is a well-designed, component-based React application with a modern tech stack. However, it is **currently a prototype/demo** lacking critical production features:
-
-**Key Strengths:**
-- ✅ Modern React with TypeScript
-- ✅ Comprehensive UI component library
-- ✅ Clean component architecture
-- ✅ Professional styling with Tailwind CSS
-
-**Critical Gaps:**
-- ❌ No real backend/robot integration
-- ❌ No error handling
-- ❌ No authentication
-- ❌ No persistence
-- ❌ No testing
 
 **Next Steps:**
 1. Clarify robot communication protocol
@@ -627,6 +432,3 @@ The Clean Bot frontend is a well-designed, component-based React application wit
 5. Add comprehensive testing
 
 ---
-
-*Documentation Generated: January 22, 2026*
-*Last Updated: January 22, 2026*
