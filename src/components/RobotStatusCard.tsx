@@ -1,7 +1,6 @@
 import { Bot, Wifi, WifiOff, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-type RobotStatus = "idle" | "cleaning" | "returning" | "charging" | "offline";
+import { ROBOT_STATUS, LOCATIONS, type RobotStatus } from "@/lib/constants";
 
 interface RobotStatusCardProps {
   status: RobotStatus;
@@ -41,9 +40,9 @@ const statusConfig: Record<RobotStatus, { label: string; color: string; bgColor:
   },
 };
 
-export function RobotStatusCard({ status, location = "Home Base" }: RobotStatusCardProps) {
+export function RobotStatusCard({ status, location = LOCATIONS.HOME_BASE }: RobotStatusCardProps) {
   const config = statusConfig[status];
-  const isConnected = status !== "offline";
+  const isConnected = status !== ROBOT_STATUS.OFFLINE;
 
   return (
     <div className="glass rounded-2xl p-6 shadow-card">
@@ -59,13 +58,13 @@ export function RobotStatusCard({ status, location = "Home Base" }: RobotStatusC
         <div className={cn(
           "relative w-16 h-16 rounded-2xl flex items-center justify-center",
           config.bgColor,
-          status === "cleaning" && "animate-pulse-glow"
+          status === ROBOT_STATUS.CLEANING && "animate-pulse-glow"
         )}>
           <Bot className={cn("h-8 w-8", config.color)} />
           {config.animate && (
             <span className={cn(
               "absolute -top-1 -right-1 w-3 h-3 rounded-full",
-              status === "cleaning" ? "bg-success" : status === "returning" ? "bg-warning" : "bg-primary",
+              status === ROBOT_STATUS.CLEANING ? "bg-success" : status === ROBOT_STATUS.RETURNING ? "bg-warning" : "bg-primary",
               "animate-status-blink"
             )} />
           )}
