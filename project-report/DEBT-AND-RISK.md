@@ -1,216 +1,41 @@
-# Clean Bot - System Architecture Documentation
 
-## Project Overview
+# Technical Debt Analysis & AI Risk Assessment- Terra Sweep Sparkle (Clean Bot Dashboard)
 
-Clean Bot is an autonomous cleaning robot that collects small trash items and debris from outdoor areas. This application allows user to control the robot from their devices. The app also provides real-time robot status monitoring, deployment controls, and project information display.
+### Key System Requirements (from Traceability Matrix)
 
-**Tech Stack:**
-- Frontend Framework: React 18.3.1
-- Language: TypeScript
-- Build Tool: Vite 5.4.19
-- UI Component Library: shadcn/ui (Radix UI primitives)
-- Styling: Tailwind CSS 3.4.17
-- Routing: React Router v6
-- State Management: React Hooks (local state) + React Query
-- Form Handling: React Hook Form + Zod
-- Charts: Recharts 2.15.4
-- Notifications: Sonner + Radix Toast
+**User Interface Requirements:**
+- **SR-UI-01:** The system must provide users with cleanup status notifications via a mobile/web interface (AC 1.5, 4.3)
+- **SR-UI-02:** The system must transmit real-time operational data (location, status) accessible by a central monitoring system (AC 2.3)
 
----
+**Navigation Requirements:**
+- **SR-NAV-01:** The robot must implement obstacle avoidance using sensors to safely navigate around dynamic and static barriers (AC 1.3)
+- **SR-NAV-02:** The robot must detect and temporarily adjust its path or pause operation when human presence or wildlife is in close proximity (AC 2.4)
 
-## System Architecture
+**Power/Docking Requirements:**
+- **SR-PWR-01:** The robot must be able to automatically return to a designated charging or docking station upon completion or low power (AC 1.4)
+- **SR-PWR-02:** The docking station must be physically secure and accessible only by authorized personnel (AC 2.5)
 
-### High-Level Architecture Diagram
+**Data/Reporting Requirements:**
+- **SR-DATA-01:** The system must generate daily reports detailing the type and estimated volume of collected debris (AC 3.4)
+- **SR-DATA-02:** The collected data must be exportable in a standard format (e.g., JSON, CSV) (AC 3.5)
 
-[![](https://mermaid.ink/img/pako:eNp1lF-PojAUxb9K02c1IDNCeNhk1ZjZZDOZHWdftvhQpYus0ktK2Yxr_O7bP1AB1QToOffcQukPz3gHKcMxTngmaLlHH8uEI1TVWytXArhkPNUmQl_LkqgDLaAogTMuN9b_xlP2ScwZvdGMNfYryBXUPCXtoFt0t3CTVbaA0AujKRPEXjat-0r_5hmVOXByHW6uPQLWbGfKeowa4QIfjBZtQI9vAm8CtkfmMo28F_ujrE5My5vYklb7LVCRtkFn3ERXAFIt116uE7DyCKd5LaVuNgJZ5SLvsAW5llTW1UJNTIxG1kDacck5lWruk9qhfEclCNIYyDkuujgyynOeqYVlglUVaQ3UOk20ocJceszM6e7gkPlRq9ssjrnaX2LGyIpmkndGd9L4xAxtvi1CrV-MLVjRVD6AVpKYM1qfKsmKzf1n-SnzYy5z1rClZUWseUKrmpudaFf0AnBQ660rCYUVTeF7viXqEFQ_vsO1f0v9XYzHX-y30DVa-Lten3n74WjfIt_3rrAPs474fqFDer_QJ_ym1sG6Xxuy3K9abrU3zNnmDscPQwOSH-aGHD8MDinuvvwOkl3bAtZ1DF_auG6X8RUKd1zD1h3fgJRwPMKZyFMcS1GzES6YKKiW-Kx7Eiz3rGAJjtUwpeKQqH_ki-opKf8FULRtAupsj-Pf9FgpVZcplWyZUwW7i9BawvrEd65FIcrEQiEocRyEkZkTx2f8ieOx70WTKPSCp-A5nHne03Q2wicc-9PpJPSD2WwWqJ9S0WWE_5nn8CdBGEbe1A-C55nnR154-Q-fFBtn?type=png)](https://mermaid.live/edit#pako:eNp1lF-PojAUxb9K02c1IDNCeNhk1ZjZZDOZHWdftvhQpYus0ktK2Yxr_O7bP1AB1QToOffcQukPz3gHKcMxTngmaLlHH8uEI1TVWytXArhkPNUmQl_LkqgDLaAogTMuN9b_xlP2ScwZvdGMNfYryBXUPCXtoFt0t3CTVbaA0AujKRPEXjat-0r_5hmVOXByHW6uPQLWbGfKeowa4QIfjBZtQI9vAm8CtkfmMo28F_ujrE5My5vYklb7LVCRtkFn3ERXAFIt116uE7DyCKd5LaVuNgJZ5SLvsAW5llTW1UJNTIxG1kDacck5lWruk9qhfEclCNIYyDkuujgyynOeqYVlglUVaQ3UOk20ocJceszM6e7gkPlRq9ssjrnaX2LGyIpmkndGd9L4xAxtvi1CrV-MLVjRVD6AVpKYM1qfKsmKzf1n-SnzYy5z1rClZUWseUKrmpudaFf0AnBQ660rCYUVTeF7viXqEFQ_vsO1f0v9XYzHX-y30DVa-Lten3n74WjfIt_3rrAPs474fqFDer_QJ_ym1sG6Xxuy3K9abrU3zNnmDscPQwOSH-aGHD8MDinuvvwOkl3bAtZ1DF_auG6X8RUKd1zD1h3fgJRwPMKZyFMcS1GzES6YKKiW-Kx7Eiz3rGAJjtUwpeKQqH_ki-opKf8FULRtAupsj-Pf9FgpVZcplWyZUwW7i9BawvrEd65FIcrEQiEocRyEkZkTx2f8ieOx70WTKPSCp-A5nHne03Q2wicc-9PpJPSD2WwWqJ9S0WWE_5nn8CdBGEbe1A-C55nnR154-Q-fFBtn)
+**Design Components Referenced:**
+- **DC-COMM-01:** Wi-Fi/Cellular Communication Module
+- **DC-SW-02:** Status Reporting API
+- **DC-COMM-02:** Real-time Telemetry Link
+- **DC-SW-03:** Monitoring Dashboard API
+- **DC-SW-04:** Data Logging and Report Generation Module
+- **DC-SW-05:** Data Export API
 
-### Component Breakdown
+### Current Dashboard Capabilities
+The current dashboard prototype provides:
+- Robot deployment controls (simulated)
+- Real-time status display (simulated)
+- Battery level monitoring (simulated)
+- Cleaning progress tracking (simulated)
+- Location tracking (simulated)
 
-#### Layout & Navigation Components
-- **Navigation** (`Navigation.tsx`): Sticky header with logo, desktop nav menu, mobile hamburger menu
-- **Header** (`Header.tsx`): Additional header UI component
-- **Footer** (`Footer.tsx`): Application footer
-
-#### Content Sections (Marketing/Information)
-- **HeroSection** (`HeroSection.tsx`): Landing hero with CTA buttons, animated branding
-- **TeamSection** (`TeamSection.tsx`): Team member profiles
-- **ProblemSection** (`ProblemSection.tsx`): Problem statement / motivation
-- **ProjectSection** (`ProjectSection.tsx`): Project details and technical info
-- **UserStoriesSection** (`UserStoriesSection.tsx`): User stories and use cases
-
-#### Interactive Dashboard Components
-- **DashboardSection** (`DashboardSection.tsx`): Main stateful container managing robot state
-  - Manages: `deployState`, `robotStatus`, `battery`, `location`, `cleaningProgress`
-  - Handles deployment/stop logic with setTimeout-based state transitions
-  - Integrates battery depletion simulation
-  
-- **DeployButton** (`DeployButton.tsx`): Visual control button
-  - States: idle, deploying, deployed
-  - Disabled when deploying
-  - Visual feedback with gradient colors and animations
-  
-- **RobotStatusCard** (`RobotStatusCard.tsx`): Status display with connectivity indicator
-  - Displays: current status, location, runtime, area cleaned
-  - Shows connection status (Wifi/WifiOff icons)
-  - Dynamic styling based on robot status (idle, cleaning, returning, charging, offline)
-  
-- **BatteryIndicator** (`BatteryIndicator.tsx`): Battery level visualization
-  - Color-coded: red (<20%), orange (20-50%), green (50%+)
-  - Shows charging state with pulse animation
-  - Displays percentage and charging status
-  
-- **CleaningProgress** (`CleaningProgress.tsx`): Progress visualization
-  - Shows percentage and area cleaned in m²
-  - Completion badge when 100%
-  - Active/inactive state indicator
-
-#### UI Component Library (/src/components/ui)
-40+ shadcn/ui components built on Radix UI:
-- **Form Components**: form, input, textarea, select, checkbox, radio-group, toggle, switch
-- **Display Components**: card, badge, alert, progress, skeleton, table
-- **Dialog/Overlay**: dialog, alert-dialog, dropdown-menu, context-menu, popover, tooltip, hover-card
-- **Navigation**: navigation-menu, menubar, pagination, tabs, breadcrumb
-- **Layout**: sidebar, resizable, scroll-area, separator, sheet, drawer
-- **Data Display**: carousel, chart, accordion, collapsible
-- **Misc**: button, label, command, calendar, input-otp, aspect-ratio
-
-#### Custom Hooks (/src/hooks)
-- **use-toast** (`hooks/use-toast.ts`): Toast notification management
-- **use-mobile** (`hooks/use-mobile.tsx`): Mobile responsiveness detection
-
-#### Utilities (/src/lib)
-- **utils.ts**: `cn()` function for merging Tailwind class names with class-variance-authority
-
----
-
-## Data Flow & State Management
-
-### State Architecture
-
-**Local Component State (React Hooks)**
-- All application state is managed locally within `DashboardSection` component
-- Uses `useState` for managing multiple state variables
-
-**State Variables in DashboardSection:**
-```typescript
-const [deployState, setDeployState] = useState<"idle" | "deploying" | "deployed">("idle")
-const [robotStatus, setRobotStatus] = useState<"idle" | "cleaning" | "returning" | "charging" | "offline">("idle")
-const [battery, setBattery] = useState(78)
-const [location, setLocation] = useState("Home Base")
-const [cleaningProgress, setCleaningProgress] = useState(0)
-```
-
-### Data Flow Diagram
-
-```
-User Action (Click Deploy Button)
-        ↓
-DeployButton.onDeploy() callback
-        ↓
-DashboardSection.handleDeploy()
-        ↓
-Update deployState → "deploying"
-Show Toast Notification
-        ↓
-setTimeout (2000ms)
-        ↓
-setDeployState("deployed")
-setRobotStatus("cleaning")
-setLocation("Zone A - North Side")
-Show Success Toast
-        ↓
-Child Components Re-render with new props
-        ↓
-UI Updates (button color, status badge, animations)
-```
-
-### Notification System
-- **Sonner**: Toast notifications for user feedback (info, success)
-- **Toast/Toaster**: Secondary notification system from shadcn/ui
-- Centralized notification dispatching via toast callbacks
-
-### State Transitions
-
-**Deploy Flow:**
-```
-idle → deploying (2s) → deployed
-              ↓
-        robot: cleaning
-```
-
-**Stop Flow:**
-```
-deployed → idle
-   ↓
-returning (3s) → idle
-   ↓
-robot: idle
-```
-
-**Battery Management:**
-- Simulated depletion during cleaning (every 100ms, -2% per tick)
-- Auto-triggers return when battery ≤ 20%
-- Shows "Returning (Low Battery)" location
-
----
-
-## External Dependencies & Integrations
-
-### Core Dependencies
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| react | ^18.3.1 | UI framework |
-| react-dom | ^18.3.1 | DOM rendering |
-| react-router-dom | ^6.30.1 | Client-side routing |
-| @tanstack/react-query | ^5.83.0 | Data fetching & caching |
-| typescript | ^5.8.3 | Type safety |
-
-### UI & Styling
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| tailwindcss | ^3.4.17 | Utility-first CSS |
-| @radix-ui/* | Latest | Accessible UI primitives |
-| shadcn/ui | - | Component library (bundled) |
-| lucide-react | ^0.462.0 | Icon library |
-| sonner | ^1.7.4 | Toast notifications |
-
-### Form & Validation
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| react-hook-form | ^7.61.1 | Form state management |
-| @hookform/resolvers | ^3.10.0 | Form validation resolvers |
-| zod | ^3.25.76 | Schema validation |
-
-### Utilities
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| clsx | ^2.1.1 | Conditional classnames |
-| tailwind-merge | ^2.6.0 | Merge Tailwind classes intelligently |
-| class-variance-authority | ^0.7.1 | CSS-in-JS variants |
-| date-fns | ^3.6.0 | Date manipulation |
-| next-themes | ^0.3.0 | Theme management |
-
-### Charts & Data Visualization
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| recharts | ^2.15.4 | React charting library |
-| embla-carousel-react | ^8.6.0 | Carousel component |
-
-### Build Tools
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| vite | ^5.4.19 | Build tool & dev server |
-| @vitejs/plugin-react-swc | ^3.11.0 | SWC compiler for React |
-| eslint | ^9.32.0 | Code linting |
-| lovable-tagger | ^1.1.11 | Component tagging (dev) |
-
----
+**Gap:** The dashboard is a prototype with no real backend integration, making it unable to fulfill SR-UI-01, SR-UI-02, SR-DATA-01, or SR-DATA-02 requirements.
 
 ## Technical Debt & Issues
 
@@ -630,26 +455,49 @@ robot: idle
 
 ---
 
-## Backlog Items
+## Summary
 
-**Refactor Monolithic State Management (IN PROGRESS)**
-- Set up global state management
-- Extract state logic from DashboardSection component
-- Refactor DashboardSection component
-- Add state persistence 
+**Total Technical Debt Items Identified:** 9  
+**Critical Architectural Issues:** 6  
+**Test Debt Items:** 1  
+**Documentation Debt Items:** 2  
 
-**Remove Lovable Platform Dependencies (IN PROGRESS)**
-- Remove Lovable dependencies in codebase
-- Update package metadata
-- Rewrite README
-- Update branding and meta tags
-- Set up independent CI/CD pipeline
-- Create deployment configuration
-- Verify independence from Lovable
+**AI-Specific Risks Identified:** 5  
+**Reliability/Hallucination Risks:** 2  
+**Security & Ethics Risks:** 2  
+**Dependency Risks:** 1  
 
-**Set up Testing Infrastucture (IN PROGRESS)**
-- Install and configure testing framework
-- Create test configuration
-- Create test file structure
-- Configure CI/CD pipeline for testing
+### Requirements Impact Summary
+
+**Blocked System Requirements:**
+- **SR-UI-01:** Status notifications (blocked by Items 1, 2, 5)
+- **SR-UI-02:** Real-time operational data (blocked by Items 1, 2, 5)
+- **SR-DATA-01:** Daily reports (blocked by Item 2)
+- **SR-DATA-02:** Data export (blocked by Item 2)
+- **SR-PWR-01:** Auto-return to dock (blocked by Items 1, 2, 7 - battery threshold not configurable)
+- **SR-PWR-02:** Secure docking (blocked by Item 6 - no authentication)
+
+**Affected User Stories:**
+- **AC 1.4, 1.5:** Battery auto-return and notifications (Items 1, 2, 5, 7)
+- **AC 2.2, 2.3, 2.5:** Geo-fencing, real-time updates, secure docking (Items 2, 6, 7)
+- **AC 3.4, 3.5:** Daily reports and data export (Item 2)
+- **AC 4.3, 4.4:** Notifications and exclusion zones (Items 1, 2, 5)
+
+**Affected Design Components:**
+- **DC-COMM-01, DC-COMM-02:** Communication modules (Item 2)
+- **DC-SW-02, DC-SW-03:** Status reporting APIs (Items 1, 2, 5)
+- **DC-SW-04, DC-SW-05:** Data logging and export (Item 2)
+- **DC-HW-01, DC-HW-02:** Battery and docking systems (Items 6, 7)
+
+**Recommended Priority Order:**
+1. **Vendor Lock-in to Lovable.dev Platform** (🔴 CRITICAL - blocks all production deployment, prevents application from being "real" standalone app)
+2. **Missing Backend API Integration Layer** (blocks SR-UI-01, SR-UI-02, SR-DATA-01, SR-DATA-02, all AC 2.3, 3.4, 3.5)
+3. **Complete Absence of Test Coverage** (blocks verification of all requirements compliance)
+4. **Monolithic State Management** (blocks SR-UI-01, SR-UI-02, scalability for multiple robots)
+5. **Missing Error Handling** (blocks reliability of SR-UI-01, SR-UI-02)
+6. **Loose TypeScript Configuration** (affects all requirements - type safety)
+7. **No Authentication System** (blocks SR-PWR-02, AC 2.5, security for all use cases)
+8. **Hardcoded Values** (affects SR-PWR-01, AC 1.4, configuration flexibility)
+9. **Lack of Documentation** (affects maintainability and traceability to all requirements)
+
 ---
