@@ -208,7 +208,7 @@ robot: idle
 | vite | ^5.4.19 | Build tool & dev server |
 | @vitejs/plugin-react-swc | ^3.11.0 | SWC compiler for React |
 | eslint | ^9.32.0 | Code linting |
-| lovable-tagger | ^1.1.11 | Component tagging (dev) |
+| platform-specific tagger (removed) | - | Former component tagging plugin (dev) |
 
 ---
 

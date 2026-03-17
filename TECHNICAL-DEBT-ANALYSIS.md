@@ -272,26 +272,26 @@ The current dashboard prototype provides:
 
 ---
 
-### Item 9: Vendor Lock-in to Lovable.dev Platform
+### Item 9: Vendor Lock-in to a Hosted Prototyping Platform
 **Category:** Architectural Debt  
 **Related Requirements:** All requirements (platform dependency affects entire system)  
 **Related Design Components:** All DC-XX components (deployment platform affects all components)  
 **Priority:** 🔴 **CRITICAL - Blocks Production Independence**
 
-**Description:** The application is currently dependent on Lovable.dev platform for development and deployment. The codebase includes `lovable-tagger` package dependency, Lovable-specific documentation in README.md, and references to Lovable.dev in meta tags. The application cannot be deployed independently or run as a standalone "real" application without Lovable.dev infrastructure. This creates vendor lock-in and prevents the application from being a production-ready, independent system.
+**Description:** The application was previously dependent on a hosted prototyping platform for development and deployment. The codebase included a platform-specific tagging dependency, platform-specific documentation in `README.md`, and platform-branded OpenGraph/Twitter meta tags. This vendor coupling prevented independent deployment as a standalone “real” application.
 
 **Impact on Requirements:**
 - **All SR-XX Requirements:** Cannot deploy independently, blocking all production requirements
 - **All AC-XX User Stories:** Application cannot function as standalone system
 - **Production Readiness:** Application is not a "real" app - it's a prototype tied to development platform
 - **Deployment Flexibility:** Cannot deploy to Vercel, Netlify, AWS, or other independent platforms
-- **Development Workflow:** Team members must use Lovable.dev to work on the project
-- **Vendor Risk:** If Lovable.dev changes or discontinues service, entire project is at risk
+- **Development Workflow:** Team members were forced into a vendor-specific workflow
+- **Vendor Risk:** If the vendor changes or discontinues service, the project is at risk
 - **CI/CD:** Cannot set up independent CI/CD pipelines
 - **Professional Credibility:** Application appears as a prototype, not a production system
 
 **Remediation Plan:**
-1. Remove `lovable-tagger` dependency from `package.json` devDependencies
+1. Remove platform-specific tagger dependency from `package.json` devDependencies
 2. Remove `componentTagger()` import and usage from `vite.config.ts`
 3. Update `package.json` metadata:
    - Change name from generic "vite_react_shadcn_ts" to "terra-sweep-sparkle"
@@ -302,8 +302,8 @@ The current dashboard prototype provides:
    - Add independent deployment instructions (Vercel, Netlify, etc.)
    - Add project-specific documentation
 5. Update `index.html` meta tags:
-   - Remove Lovable.dev OpenGraph images
-   - Remove Lovable Twitter references
+   - Remove vendor-branded OpenGraph images
+   - Remove vendor Twitter references
    - Add project-specific branding
 6. Set up independent CI/CD:
    - Create GitHub Actions workflows (`.github/workflows/ci.yml`, `deploy.yml`)

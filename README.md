@@ -174,4 +174,4 @@ See `src/components/UserStoriesSection.tsx` for detailed user stories.
 For technical debt analysis and development roadmap, see:
 - `TECHNICAL-DEBT-ANALYSIS.md` - Comprehensive technical debt assessment
 - `TASK-ASSIGNMENT-3-TEAM-MEMBERS.txt` - Team task breakdown
-- `LOVABLE-DECOUPLING-PLAN.md` - Platform independence plan
+- `vercel.json` and `.env.example` - Deployment and environment configuration
