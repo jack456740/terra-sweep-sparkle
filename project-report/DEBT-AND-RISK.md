@@ -278,7 +278,7 @@ The current dashboard prototype provides:
    - Change name from generic "vite_react_shadcn_ts" to "terra-sweep-sparkle"
    - Add proper description, version, and project metadata
 4. Rewrite `README.md`:
-   - Remove all Lovable.dev references and instructions
+   - Remove all vendor-specific references and instructions
    - Add standard npm/yarn installation instructions
    - Add independent deployment instructions (Vercel, Netlify, etc.)
    - Add project-specific documentation
@@ -294,14 +294,14 @@ The current dashboard prototype provides:
    - `.env.example` for environment variables
    - Deployment documentation
 8. Verify independence:
-   - Test build without Lovable dependencies
+   - Test build without vendor-specific dependencies
    - Test deployment to independent platform
    - Verify all functionality works post-decoupling
 
 **Files Affected:**
-- `package.json` (remove lovable-tagger, update metadata)
+- `package.json` (remove platform-specific tagger, update metadata)
 - `vite.config.ts` (remove componentTagger import and usage)
-- `README.md` (complete rewrite - remove Lovable references)
+- `README.md` (complete rewrite - remove vendor references)
 - `index.html` (update meta tags)
 - `.github/workflows/` (new - CI/CD pipelines)
 - `vercel.json` or `netlify.toml` (new - deployment config)
@@ -342,7 +342,7 @@ The current dashboard prototype provides:
 **Related Requirements:** SR-UI-02, SR-DATA-02, AC 2.3, AC 3.4, AC 3.5  
 **Related Design Components:** DC-COMM-02 (Real-time Telemetry), DC-SW-05 (Data Export API)
 
-**Description:** While the current codebase doesn't directly process user prompts, the application is built on Lovable.dev (an AI development platform) and may integrate AI features in the future (e.g., natural language robot commands for AC 1.1, AI-powered scheduling for AC 1.2). Without proper input validation and sanitization, the system is vulnerable to prompt injection attacks where malicious users could inject commands that manipulate AI behavior. Additionally, robot status data (location, battery, cleaning progress) is currently stored only in client-side state with no encryption or access controls, creating data leakage risks. This is particularly critical for beach security (AC 2.3) and environmental data (AC 3.4, 3.5) use cases.
+**Description:** While the current codebase doesn't directly process user prompts, the application was initially generated and iterated using AI-assisted tooling and may integrate AI features in the future (e.g., natural language robot commands for AC 1.1, AI-powered scheduling for AC 1.2). Without proper input validation and sanitization, the system is vulnerable to prompt injection attacks where malicious users could inject commands that manipulate AI behavior. Additionally, robot status data (location, battery, cleaning progress) is currently stored only in client-side state with no encryption or access controls, creating data leakage risks. This is particularly critical for beach security (AC 2.3) and environmental data (AC 3.4, 3.5) use cases.
 
 **Impact:**
 - Malicious prompts could cause robot to perform unauthorized actions (violates AC 2.2 geo-fencing)
@@ -366,26 +366,26 @@ The current dashboard prototype provides:
 
 ---
 
-### Risk 3: Dependency on Lovable.dev Platform and lovable-tagger ⚠️ IN PROGRESS
+### Risk 3: Dependency on a Hosted Prototyping Platform and Platform-specific Tooling
 **Category:** Dependency Risk  
 **Related Requirements:** All requirements (platform dependency affects entire system)  
 **Related Design Components:** All DC-XX components (deployment platform affects all components)
 
-**Description:** The application had a dependency on `lovable-tagger` package and was tightly coupled to Lovable.dev platform for deployment and development workflow. This created vendor lock-in and risked development workflow disruption if the platform changed or discontinued service.
+**Description:** The application previously depended on platform-specific tooling and a hosted prototyping workflow. This created vendor lock-in and risked development disruption if the vendor changed or discontinued service.
 
 **Impact (Before Decoupling):**
-- Development workflow disruption if lovable-tagger breaks (blocks all SR-UI-XX, SR-DATA-XX)
-- Deployment pipeline failure if Lovable.dev platform changes (blocks production deployment)
+- Development workflow disruption if vendor tooling breaks (blocks all SR-UI-XX, SR-DATA-XX)
+- Deployment pipeline failure if the platform changes (blocks production deployment)
 - Inability to develop locally if platform dependencies fail (blocks AC 1.5, 2.3, 3.4, 3.5)
 - Vendor lock-in preventing migration to other platforms
 - Potential build failures on future dependency updates
 - Cannot fulfill any system requirements if platform fails
 
 **Mitigation (Completed):**
-1. Remove `lovable-tagger` from `vite.config.ts` and `package.json`
+1. Remove platform-specific tagger tooling from `vite.config.ts` and `package.json`
 2. Update package name from generic "vite_react_shadcn_ts" to "terra-sweep-sparkle"
-3. Rewrite README.md with project-specific documentation (remove Lovable references)
-4. Update meta tags in `index.html` (remove Lovable branding)
+3. Rewrite README.md with project-specific documentation (remove vendor references)
+4. Update meta tags in `index.html` (remove vendor branding)
 5. Set up independent CI/CD pipeline (GitHub Actions)
 6. Create deployment configuration for Vercel/Netlify
 7. Document independent deployment process
@@ -490,7 +490,7 @@ The current dashboard prototype provides:
 - **DC-HW-01, DC-HW-02:** Battery and docking systems (Items 6, 7)
 
 **Recommended Priority Order:**
-1. **Vendor Lock-in to Lovable.dev Platform** (🔴 CRITICAL - blocks all production deployment, prevents application from being "real" standalone app)
+1. **Vendor Lock-in to a Hosted Prototyping Platform** (🔴 CRITICAL - blocks all production deployment, prevents application from being "real" standalone app)
 2. **Missing Backend API Integration Layer** (blocks SR-UI-01, SR-UI-02, SR-DATA-01, SR-DATA-02, all AC 2.3, 3.4, 3.5)
 3. **Complete Absence of Test Coverage** (blocks verification of all requirements compliance)
 4. **Monolithic State Management** (blocks SR-UI-01, SR-UI-02, scalability for multiple robots)
