@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
