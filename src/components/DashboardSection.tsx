@@ -1,96 +1,30 @@
-import { useState, useEffect } from "react";
+import { useRobotStore } from "@/store/robotStore";
+import { useRobotSimulation } from "@/hooks/useRobotSimulation";
 import { DeployButton } from "@/components/DeployButton";
 import { RobotStatusCard } from "@/components/RobotStatusCard";
 import { BatteryIndicator } from "@/components/BatteryIndicator";
 import { CleaningProgress } from "@/components/CleaningProgress";
 import { toast } from "sonner";
-import { 
-  ROBOT_STATUS, 
-  DEPLOY_STATE, 
-  LOCATIONS, 
-  type RobotStatus, 
-  type DeployState 
-} from "@/lib/constants";
+import { ROBOT_STATUS } from "@/lib/constants";
 import { getConfig } from "@/lib/config";
 
-// Get configuration values (can be overridden via environment variables)
 const config = getConfig();
 
 export function DashboardSection() {
-  const [deployState, setDeployState] = useState<DeployState>(DEPLOY_STATE.IDLE);
-  const [robotStatus, setRobotStatus] = useState<RobotStatus>(ROBOT_STATUS.IDLE);
-  const [battery, setBattery] = useState(config.battery.initialPercentage);
-  const [location, setLocation] = useState(LOCATIONS.HOME_BASE);
-  const [cleaningProgress, setCleaningProgress] = useState(config.cleaning.initialProgress);
+  const { deployState, robotStatus, batteryLevel, currentLocation, cleaningProgress, deployRobot, stopRobot } = useRobotStore();
+  useRobotSimulation();
 
   const handleDeploy = () => {
-    setDeployState(DEPLOY_STATE.DEPLOYING);
-    setCleaningProgress(config.cleaning.initialProgress);
     toast.info("Initializing robot systems...");
-    
-    setTimeout(() => {
-      setDeployState(DEPLOY_STATE.DEPLOYED);
-      setRobotStatus(ROBOT_STATUS.CLEANING);
-      setLocation(LOCATIONS.ZONE_A_NORTH);
-      toast.success("Robot deployed successfully!");
-    }, config.timing.deployTimeoutMs);
+    deployRobot();
+    setTimeout(() => toast.success("Robot deployed successfully!"), config.timing.deployTimeoutMs);
   };
 
   const handleStop = () => {
-    setRobotStatus(ROBOT_STATUS.RETURNING);
-    setLocation(LOCATIONS.RETURNING);
     toast.info("Robot returning to base...");
-    
-    setTimeout(() => {
-      setDeployState(DEPLOY_STATE.IDLE);
-      setRobotStatus(ROBOT_STATUS.IDLE);
-      setLocation(LOCATIONS.HOME_BASE);
-      toast.success("Robot returned to base");
-    }, config.timing.returnTimeoutMs);
+    stopRobot();
+    setTimeout(() => toast.success("Robot returned to base"), config.timing.returnTimeoutMs);
   };
-
-  useEffect(() => {
-    if (robotStatus === ROBOT_STATUS.CLEANING) {
-      const interval = setInterval(() => {
-        setBattery(prev => {
-          // Validate battery value before processing
-          const currentBattery = Math.max(
-            config.battery.minPercentage, 
-            Math.min(config.battery.maxPercentage, prev)
-          );
-          
-          if (currentBattery <= config.battery.lowThreshold) {
-            setRobotStatus(ROBOT_STATUS.RETURNING);
-            setLocation(LOCATIONS.RETURNING_LOW_BATTERY);
-            toast.warning("Low battery! Returning to base...");
-            return currentBattery; // Prevent battery from going below minimum
-          }
-          
-          const newBattery = currentBattery - config.battery.decrementPerInterval;
-          return Math.max(config.battery.minPercentage, newBattery);
-        });
-        
-        setCleaningProgress(prev => {
-          // Validate progress value before processing
-          const currentProgress = Math.max(
-            config.cleaning.initialProgress,
-            Math.min(config.cleaning.maxProgress, prev)
-          );
-          
-          if (currentProgress >= config.cleaning.maxProgress) {
-            setRobotStatus(ROBOT_STATUS.RETURNING);
-            setLocation(LOCATIONS.RETURNING);
-            toast.success("Cleaning complete! Returning to base.");
-            return config.cleaning.maxProgress;
-          }
-          
-          const newProgress = currentProgress + config.cleaning.progressIncrement;
-          return Math.min(config.cleaning.maxProgress, newProgress);
-        });
-      }, config.timing.cleaningIntervalMs);
-      return () => clearInterval(interval);
-    }
-  }, [robotStatus]);
 
   return (
     <section id="dashboard" className="py-20 px-4 bg-card">
@@ -115,12 +49,12 @@ export function DashboardSection() {
           </div>
           
           <div className="lg:col-span-1">
-            <RobotStatusCard status={robotStatus} location={location} />
+            <RobotStatusCard status={robotStatus} location={currentLocation} />
           </div>
           
           <div className="lg:col-span-1">
             <BatteryIndicator 
-              percentage={battery} 
+              percentage={batteryLevel}
               isCharging={robotStatus === ROBOT_STATUS.CHARGING} 
             />
           </div>
