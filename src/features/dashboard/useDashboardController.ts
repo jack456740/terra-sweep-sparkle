@@ -13,15 +13,13 @@ export function useDashboardController() {
     batteryLevel,
     currentLocation,
     cleaningProgress,
-    deployRobot,
-    stopRobot,
+    updateStatus,
   } = useRobotStore();
 
   useRobotSimulation();
 
   const { handleDeploy, handleStop } = useDashboardTaskManagement({
-    deployRobot,
-    stopRobot,
+    updateStatus,
   });
 
   const dashboardViewState = useDashboardRobotViewState({
