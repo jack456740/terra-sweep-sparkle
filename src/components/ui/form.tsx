@@ -17,6 +17,12 @@ type FormFieldContextValue<
 
 const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue);
 
+/**
+ * Form Field component.
+ *  * 
+ *  * @param props - The component props.
+ * @returns The rendered Form Field component.
+ */
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
@@ -59,6 +65,10 @@ type FormItemContextValue = {
 
 const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
 
+/**
+ * Form Item component.
+ * @returns The rendered Form Item component.
+ */
 const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => {
     const id = React.useId();
@@ -72,6 +82,10 @@ const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
 );
 FormItem.displayName = "FormItem";
 
+/**
+ * Form Label component.
+ * @returns The rendered Form Label component.
+ */
 const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
@@ -82,6 +96,10 @@ const FormLabel = React.forwardRef<
 });
 FormLabel.displayName = "FormLabel";
 
+/**
+ * Form Control component.
+ * @returns The rendered Form Control component.
+ */
 const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.ComponentPropsWithoutRef<typeof Slot>>(
   ({ ...props }, ref) => {
     const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
@@ -99,6 +117,10 @@ const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.Compon
 );
 FormControl.displayName = "FormControl";
 
+/**
+ * Form Description component.
+ * @returns The rendered Form Description component.
+ */
 const FormDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => {
     const { formDescriptionId } = useFormField();
@@ -108,6 +130,10 @@ const FormDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttribu
 );
 FormDescription.displayName = "FormDescription";
 
+/**
+ * Form Message component.
+ * @returns The rendered Form Message component.
+ */
 const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, children, ...props }, ref) => {
     const { error, formMessageId } = useFormField();

@@ -1,5 +1,9 @@
 import { Bot, ChevronDown } from "lucide-react";
 
+/**
+ * Hero Section component.
+ * @returns The rendered Hero Section component.
+ */
 export function HeroSection() {
   return (
     <section id="home" className="min-h-screen flex flex-col items-center justify-center relative gradient-hero px-4 py-20">

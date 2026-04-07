@@ -6,6 +6,10 @@ const benefits = [
   { icon: Heart, label: "Increases Convenience" },
 ];
 
+/**
+ * Problem Section component.
+ * @returns The rendered Problem Section component.
+ */
 export function ProblemSection() {
   return (
     <section id="problem" className="py-20 px-4 gradient-hero">

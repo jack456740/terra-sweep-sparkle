@@ -9,6 +9,10 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+/**
+ * App component.
+ * @returns The rendered App component.
+ */
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>

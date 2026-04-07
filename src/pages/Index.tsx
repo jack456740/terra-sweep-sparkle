@@ -7,6 +7,10 @@ import { DashboardSection } from "@/components/DashboardSection";
 import { UserStoriesSection } from "@/components/UserStoriesSection";
 import { Footer } from "@/components/Footer";
 
+/**
+ * Index component.
+ * @returns The rendered Index component.
+ */
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
