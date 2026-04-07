@@ -9,6 +9,12 @@ interface DeployButtonProps {
   disabled?: boolean;
 }
 
+/**
+ * Deploy Button component.
+ *  * 
+ *  * @param props - The component props.
+ * @returns The rendered Deploy Button component.
+ */
 export function DeployButton({ state, onDeploy, onStop, disabled = false }: DeployButtonProps) {
   const isDeployed = state === DEPLOY_STATE.DEPLOYED || state === DEPLOY_STATE.DEPLOYING;
 

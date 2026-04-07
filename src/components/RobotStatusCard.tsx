@@ -40,6 +40,12 @@ const statusConfig: Record<RobotStatus, { label: string; color: string; bgColor:
   },
 };
 
+/**
+ * Robot Status Card component.
+ *  * 
+ *  * @param props - The component props.
+ * @returns The rendered Robot Status Card component.
+ */
 export function RobotStatusCard({ status, location = LOCATIONS.HOME_BASE }: RobotStatusCardProps) {
   const config = statusConfig[status];
   const isConnected = status !== ROBOT_STATUS.OFFLINE;

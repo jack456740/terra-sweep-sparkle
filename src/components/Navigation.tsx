@@ -11,6 +11,10 @@ const navLinks = [
   { label: "User Stories", href: "#stories" },
 ];
 
+/**
+ * Navigation component.
+ * @returns The rendered Navigation component.
+ */
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
 
