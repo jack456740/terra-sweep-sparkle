@@ -13,7 +13,7 @@ let markdown = `# Component Documentation\n\nThis document describes all React c
 function extractDoc(node: FunctionDeclaration | VariableDeclaration, name: string, filePath: string) {
   let description = "No description provided.";
   
-  let jsDocs = [];
+  let jsDocs: any[] = [];
   if (Node.isFunctionDeclaration(node)) {
     jsDocs = node.getJsDocs();
   } else if (Node.isVariableDeclaration(node)) {
