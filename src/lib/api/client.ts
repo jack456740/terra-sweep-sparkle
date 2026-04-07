@@ -1,3 +1,5 @@
+import { getApiEnvironmentConfig } from "@/lib/config";
+
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export type ApiRequestConfig = {
@@ -70,7 +72,7 @@ export class ApiClient {
   private errorInterceptors: ErrorInterceptor[] = [];
 
   constructor(baseUrl?: string, timeoutMs: number = DEFAULT_TIMEOUT_MS) {
-    this.baseUrl = baseUrl ?? import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api";
+    this.baseUrl = baseUrl ?? getApiEnvironmentConfig().apiBaseUrl;
     this.defaultTimeoutMs = timeoutMs;
   }
 

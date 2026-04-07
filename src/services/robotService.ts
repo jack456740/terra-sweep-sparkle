@@ -1,4 +1,5 @@
 import { apiClient, type ApiClientError } from "@/lib/api/client";
+import { getApiEnvironmentConfig } from "@/lib/config";
 import type { DeployState, RobotStatus } from "@/lib/constants";
 
 export type RobotStatusResponse = {
@@ -74,7 +75,7 @@ export const robotService = {
   },
 
   subscribeToRobotUpdates(onMessage: (update: RobotRealtimeUpdate) => void): () => void {
-    const wsUrl = import.meta.env.VITE_WS_URL ?? "ws://localhost:3000";
+    const { wsUrl } = getApiEnvironmentConfig();
     const socket = new WebSocket(`${wsUrl.replace(/\/$/, "")}/robot/updates`);
 
     socket.onmessage = (event: MessageEvent<string>) => {
