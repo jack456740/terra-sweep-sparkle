@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DeployButton } from "@/components/DeployButton";
 import { RobotStatusCard } from "@/components/RobotStatusCard";
 import { BatteryIndicator } from "@/components/BatteryIndicator";
 import { CleaningProgress } from "@/components/CleaningProgress";
 import { toast } from "sonner";
+import { logError, toUserFacingError } from "@/lib/errorHandler";
 import { 
   ROBOT_STATUS, 
   DEPLOY_STATE, 
@@ -22,71 +23,127 @@ export function DashboardSection() {
   const [battery, setBattery] = useState(config.battery.initialPercentage);
   const [location, setLocation] = useState(LOCATIONS.HOME_BASE);
   const [cleaningProgress, setCleaningProgress] = useState(config.cleaning.initialProgress);
+  const batteryRef = useRef<number>(config.battery.initialPercentage);
+  const cleaningProgressRef = useRef<number>(config.cleaning.initialProgress);
+
+  // Defensively avoid updating state after unmount.
+  const isMountedRef = useRef<boolean>(true);
+  const deployTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const stopTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (deployTimeoutRef.current) window.clearTimeout(deployTimeoutRef.current);
+      if (stopTimeoutRef.current) window.clearTimeout(stopTimeoutRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    batteryRef.current = battery;
+  }, [battery]);
+
+  useEffect(() => {
+    cleaningProgressRef.current = cleaningProgress;
+  }, [cleaningProgress]);
 
   const handleDeploy = () => {
     setDeployState(DEPLOY_STATE.DEPLOYING);
     setCleaningProgress(config.cleaning.initialProgress);
     toast.info("Initializing robot systems...");
-    
-    setTimeout(() => {
-      setDeployState(DEPLOY_STATE.DEPLOYED);
-      setRobotStatus(ROBOT_STATUS.CLEANING);
-      setLocation(LOCATIONS.ZONE_A_NORTH);
-      toast.success("Robot deployed successfully!");
+
+    if (deployTimeoutRef.current) window.clearTimeout(deployTimeoutRef.current);
+
+    deployTimeoutRef.current = window.setTimeout(() => {
+      if (!isMountedRef.current) return;
+      try {
+        setDeployState(DEPLOY_STATE.DEPLOYED);
+        setRobotStatus(ROBOT_STATUS.CLEANING);
+        setLocation(LOCATIONS.ZONE_A_NORTH);
+        toast.success("Robot deployed successfully!");
+      } catch (err) {
+        logError(err, "DashboardSection handleDeploy setTimeout");
+        const userFacing = toUserFacingError(err);
+        toast.error(userFacing.message);
+      }
     }, config.timing.deployTimeoutMs);
   };
 
   const handleStop = () => {
+    if (stopTimeoutRef.current) window.clearTimeout(stopTimeoutRef.current);
+
     setRobotStatus(ROBOT_STATUS.RETURNING);
     setLocation(LOCATIONS.RETURNING);
     toast.info("Robot returning to base...");
     
-    setTimeout(() => {
-      setDeployState(DEPLOY_STATE.IDLE);
-      setRobotStatus(ROBOT_STATUS.IDLE);
-      setLocation(LOCATIONS.HOME_BASE);
-      toast.success("Robot returned to base");
+    stopTimeoutRef.current = window.setTimeout(() => {
+      if (!isMountedRef.current) return;
+      try {
+        setDeployState(DEPLOY_STATE.IDLE);
+        setRobotStatus(ROBOT_STATUS.IDLE);
+        setLocation(LOCATIONS.HOME_BASE);
+        toast.success("Robot returned to base");
+      } catch (err) {
+        logError(err, "DashboardSection handleStop setTimeout");
+        const userFacing = toUserFacingError(err);
+        toast.error(userFacing.message);
+      }
     }, config.timing.returnTimeoutMs);
   };
 
   useEffect(() => {
     if (robotStatus === ROBOT_STATUS.CLEANING) {
       const interval = setInterval(() => {
-        setBattery(prev => {
-          // Validate battery value before processing
+        if (!isMountedRef.current) return;
+
+        try {
+          // Compute both values first, then apply exactly one deterministic transition.
           const currentBattery = Math.max(
-            config.battery.minPercentage, 
-            Math.min(config.battery.maxPercentage, prev)
+            config.battery.minPercentage,
+            Math.min(config.battery.maxPercentage, batteryRef.current)
           );
-          
-          if (currentBattery <= config.battery.lowThreshold) {
+          const currentProgress = Math.max(
+            config.cleaning.initialProgress,
+            Math.min(config.cleaning.maxProgress, cleaningProgressRef.current)
+          );
+
+          const nextBattery =
+            currentBattery <= config.battery.lowThreshold
+              ? currentBattery
+              : Math.max(
+                  config.battery.minPercentage,
+                  currentBattery - config.battery.decrementPerInterval
+                );
+          const nextProgress =
+            currentProgress >= config.cleaning.maxProgress
+              ? config.cleaning.maxProgress
+              : Math.min(
+                  config.cleaning.maxProgress,
+                  currentProgress + config.cleaning.progressIncrement
+                );
+
+          setBattery(nextBattery);
+          setCleaningProgress(nextProgress);
+
+          const isLowBattery = currentBattery <= config.battery.lowThreshold;
+          const isCleaningComplete = currentProgress >= config.cleaning.maxProgress;
+
+          if (isLowBattery) {
             setRobotStatus(ROBOT_STATUS.RETURNING);
             setLocation(LOCATIONS.RETURNING_LOW_BATTERY);
             toast.warning("Low battery! Returning to base...");
-            return currentBattery; // Prevent battery from going below minimum
+            return;
           }
-          
-          const newBattery = currentBattery - config.battery.decrementPerInterval;
-          return Math.max(config.battery.minPercentage, newBattery);
-        });
-        
-        setCleaningProgress(prev => {
-          // Validate progress value before processing
-          const currentProgress = Math.max(
-            config.cleaning.initialProgress,
-            Math.min(config.cleaning.maxProgress, prev)
-          );
-          
-          if (currentProgress >= config.cleaning.maxProgress) {
+
+          if (isCleaningComplete) {
             setRobotStatus(ROBOT_STATUS.RETURNING);
             setLocation(LOCATIONS.RETURNING);
             toast.success("Cleaning complete! Returning to base.");
-            return config.cleaning.maxProgress;
           }
-          
-          const newProgress = currentProgress + config.cleaning.progressIncrement;
-          return Math.min(config.cleaning.maxProgress, newProgress);
-        });
+        } catch (err) {
+          logError(err, "DashboardSection cleaning interval");
+          toast.error(toUserFacingError(err).message);
+        }
       }, config.timing.cleaningIntervalMs);
       return () => clearInterval(interval);
     }
