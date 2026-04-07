@@ -1,4 +1,4 @@
-import { Project, SyntaxKind, Node, FunctionDeclaration, VariableDeclaration } from 'ts-morph';
+import { Project, SyntaxKind, Node, FunctionDeclaration, VariableDeclaration, JSDoc } from 'ts-morph';
 import * as fs from 'fs';
 
 const project = new Project();
@@ -13,7 +13,7 @@ let markdown = `# Component Documentation\n\nThis document describes all React c
 function extractDoc(node: FunctionDeclaration | VariableDeclaration, name: string, filePath: string) {
   let description = "No description provided.";
   
-  let jsDocs: any[] = [];
+  let jsDocs: JSDoc[] = [];
   if (Node.isFunctionDeclaration(node)) {
     jsDocs = node.getJsDocs();
   } else if (Node.isVariableDeclaration(node)) {
@@ -59,7 +59,7 @@ function extractDoc(node: FunctionDeclaration | VariableDeclaration, name: strin
     }
   }
 
-  const relativePath = filePath.replace(/.*src[\\\/]/, 'src/');
+  const relativePath = filePath.replace(/.*src[\\/]/, 'src/');
 
   markdown += `## ${name}\n\n`;
   markdown += `**File:** \`${relativePath}\`\n\n`;
@@ -69,8 +69,11 @@ function extractDoc(node: FunctionDeclaration | VariableDeclaration, name: strin
 }
 
 // Separate components by custom and UI primitives for better readability
-const customComponents: {node: any, name: string, file: string}[] = [];
-const uiComponents: {node: any, name: string, file: string}[] = [];
+type ComponentNode = FunctionDeclaration | VariableDeclaration;
+type ComponentDocEntry = { node: ComponentNode; name: string; file: string };
+
+const customComponents: ComponentDocEntry[] = [];
+const uiComponents: ComponentDocEntry[] = [];
 
 for (const sourceFile of project.getSourceFiles()) {
   const filePath = sourceFile.getFilePath();

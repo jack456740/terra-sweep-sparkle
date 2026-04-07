@@ -25,11 +25,11 @@ export function useDashboardTaskManagement({
       toast.success("Robot deployed successfully!");
     } catch {
       updateStatus({
-        deployState: DEPLOY_STATE.IDLE,
-        robotStatus: ROBOT_STATUS.IDLE,
-        currentLocation: LOCATIONS.HOME_BASE,
+        deployState: DEPLOY_STATE.DEPLOYED,
+        robotStatus: ROBOT_STATUS.CLEANING,
+        currentLocation: LOCATIONS.ZONE_A_NORTH,
       });
-      toast.error("Unable to deploy robot. Please try again.");
+      toast.warning("Backend unavailable. Running local simulation mode.");
     }
   }, [updateStatus]);
 
@@ -46,7 +46,12 @@ export function useDashboardTaskManagement({
       updateStatus(status);
       toast.success("Robot returned to base");
     } catch {
-      toast.error("Unable to stop robot right now. Please try again.");
+      updateStatus({
+        deployState: DEPLOY_STATE.IDLE,
+        robotStatus: ROBOT_STATUS.IDLE,
+        currentLocation: LOCATIONS.HOME_BASE,
+      });
+      toast.warning("Backend unavailable. Robot returned in local simulation mode.");
     }
   }, [updateStatus]);
 
