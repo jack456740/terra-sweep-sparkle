@@ -10,6 +10,10 @@ import { getConfig } from "@/lib/config";
 
 const config = getConfig();
 
+/**
+ * Dashboard Section component.
+ * @returns The rendered Dashboard Section component.
+ */
 export function DashboardSection() {
   const { deployState, robotStatus, batteryLevel, currentLocation, cleaningProgress, deployRobot, stopRobot } = useRobotStore();
   useRobotSimulation();

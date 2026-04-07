@@ -43,6 +43,10 @@ const stories = [
   },
 ];
 
+/**
+ * User Stories Section component.
+ * @returns The rendered User Stories Section component.
+ */
 export function UserStoriesSection() {
   return (
     <section id="stories" className="py-20 px-4 gradient-hero">

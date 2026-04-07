@@ -23,6 +23,10 @@ const features = [
   },
 ];
 
+/**
+ * Project Section component.
+ * @returns The rendered Project Section component.
+ */
 export function ProjectSection() {
   return (
     <section id="project" className="py-20 px-4 bg-card">
