@@ -12,7 +12,8 @@ describe('Unit: Utility cn', () => {
   });
 
   it('safely evaluates conditional classes', () => {
-    expect(cn('flex', false && 'hidden', 'items-center')).toBe('flex items-center');
+    const isHidden = false;
+    expect(cn('flex', isHidden ? 'hidden' : undefined, 'items-center')).toBe('flex items-center');
   });
 
   it('gracefully handles empty inputs safely', () => {
