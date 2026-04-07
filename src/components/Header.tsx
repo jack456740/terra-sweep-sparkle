@@ -1,5 +1,9 @@
 import { Bot, Settings } from "lucide-react";
 
+/**
+ * Header component.
+ * @returns The rendered Header component.
+ */
 export function Header() {
   return (
     <header className="glass sticky top-0 z-50 border-b border-border/50">

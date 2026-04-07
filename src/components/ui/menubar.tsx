@@ -14,6 +14,10 @@ const MenubarSub = MenubarPrimitive.Sub;
 
 const MenubarRadioGroup = MenubarPrimitive.RadioGroup;
 
+/**
+ * Menubar component.
+ * @returns The rendered Menubar component.
+ */
 const Menubar = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Root>
@@ -26,6 +30,10 @@ const Menubar = React.forwardRef<
 ));
 Menubar.displayName = MenubarPrimitive.Root.displayName;
 
+/**
+ * Menubar Trigger component.
+ * @returns The rendered Menubar Trigger component.
+ */
 const MenubarTrigger = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Trigger>
@@ -41,6 +49,10 @@ const MenubarTrigger = React.forwardRef<
 ));
 MenubarTrigger.displayName = MenubarPrimitive.Trigger.displayName;
 
+/**
+ * Menubar Sub Trigger component.
+ * @returns The rendered Menubar Sub Trigger component.
+ */
 const MenubarSubTrigger = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.SubTrigger>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubTrigger> & {
@@ -62,6 +74,10 @@ const MenubarSubTrigger = React.forwardRef<
 ));
 MenubarSubTrigger.displayName = MenubarPrimitive.SubTrigger.displayName;
 
+/**
+ * Menubar Sub Content component.
+ * @returns The rendered Menubar Sub Content component.
+ */
 const MenubarSubContent = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.SubContent>
@@ -77,6 +93,10 @@ const MenubarSubContent = React.forwardRef<
 ));
 MenubarSubContent.displayName = MenubarPrimitive.SubContent.displayName;
 
+/**
+ * Menubar Content component.
+ * @returns The rendered Menubar Content component.
+ */
 const MenubarContent = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Content>
@@ -97,6 +117,10 @@ const MenubarContent = React.forwardRef<
 ));
 MenubarContent.displayName = MenubarPrimitive.Content.displayName;
 
+/**
+ * Menubar Item component.
+ * @returns The rendered Menubar Item component.
+ */
 const MenubarItem = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Item> & {
@@ -115,6 +139,10 @@ const MenubarItem = React.forwardRef<
 ));
 MenubarItem.displayName = MenubarPrimitive.Item.displayName;
 
+/**
+ * Menubar Checkbox Item component.
+ * @returns The rendered Menubar Checkbox Item component.
+ */
 const MenubarCheckboxItem = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.CheckboxItem>
@@ -138,6 +166,10 @@ const MenubarCheckboxItem = React.forwardRef<
 ));
 MenubarCheckboxItem.displayName = MenubarPrimitive.CheckboxItem.displayName;
 
+/**
+ * Menubar Radio Item component.
+ * @returns The rendered Menubar Radio Item component.
+ */
 const MenubarRadioItem = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.RadioItem>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.RadioItem>
@@ -160,6 +192,10 @@ const MenubarRadioItem = React.forwardRef<
 ));
 MenubarRadioItem.displayName = MenubarPrimitive.RadioItem.displayName;
 
+/**
+ * Menubar Label component.
+ * @returns The rendered Menubar Label component.
+ */
 const MenubarLabel = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Label> & {
@@ -174,6 +210,10 @@ const MenubarLabel = React.forwardRef<
 ));
 MenubarLabel.displayName = MenubarPrimitive.Label.displayName;
 
+/**
+ * Menubar Separator component.
+ * @returns The rendered Menubar Separator component.
+ */
 const MenubarSeparator = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Separator>
@@ -182,6 +222,12 @@ const MenubarSeparator = React.forwardRef<
 ));
 MenubarSeparator.displayName = MenubarPrimitive.Separator.displayName;
 
+/**
+ * Menubar Shortcut component.
+ *  * 
+ *  * @param props - The component props.
+ * @returns The rendered Menubar Shortcut component.
+ */
 const MenubarShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
   return <span className={cn("ml-auto text-xs tracking-widest text-muted-foreground", className)} {...props} />;
 };

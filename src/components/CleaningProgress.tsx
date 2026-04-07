@@ -7,6 +7,12 @@ interface CleaningProgressProps {
   totalArea?: number;
 }
 
+/**
+ * Cleaning Progress component.
+ *  * 
+ *  * @param props - The component props.
+ * @returns The rendered Cleaning Progress component.
+ */
 export function CleaningProgress({ progress, isActive, totalArea = 500 }: CleaningProgressProps) {
   const cleanedArea = Math.round((progress / 100) * totalArea);
 

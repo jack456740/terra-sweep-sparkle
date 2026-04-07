@@ -5,6 +5,10 @@ import { CleaningProgress } from "@/components/CleaningProgress";
 import { DashboardQuickStats } from "@/features/dashboard/components/DashboardQuickStats";
 import { useDashboardController } from "@/features/dashboard/useDashboardController";
 
+/**
+ * Dashboard Section component.
+ * @returns The rendered Dashboard Section component.
+ */
 export function DashboardSection() {
   const {
     deployState,

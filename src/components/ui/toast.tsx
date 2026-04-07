@@ -7,6 +7,10 @@ import { cn } from "@/lib/utils";
 
 const ToastProvider = ToastPrimitives.Provider;
 
+/**
+ * Toast Viewport component.
+ * @returns The rendered Toast Viewport component.
+ */
 const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
@@ -37,6 +41,10 @@ const toastVariants = cva(
   },
 );
 
+/**
+ * Toast component.
+ * @returns The rendered Toast component.
+ */
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & VariantProps<typeof toastVariants>
@@ -45,6 +53,10 @@ const Toast = React.forwardRef<
 });
 Toast.displayName = ToastPrimitives.Root.displayName;
 
+/**
+ * Toast Action component.
+ * @returns The rendered Toast Action component.
+ */
 const ToastAction = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Action>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Action>
@@ -60,6 +72,10 @@ const ToastAction = React.forwardRef<
 ));
 ToastAction.displayName = ToastPrimitives.Action.displayName;
 
+/**
+ * Toast Close component.
+ * @returns The rendered Toast Close component.
+ */
 const ToastClose = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Close>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Close>
@@ -78,6 +94,10 @@ const ToastClose = React.forwardRef<
 ));
 ToastClose.displayName = ToastPrimitives.Close.displayName;
 
+/**
+ * Toast Title component.
+ * @returns The rendered Toast Title component.
+ */
 const ToastTitle = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Title>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title>
@@ -86,6 +106,10 @@ const ToastTitle = React.forwardRef<
 ));
 ToastTitle.displayName = ToastPrimitives.Title.displayName;
 
+/**
+ * Toast Description component.
+ * @returns The rendered Toast Description component.
+ */
 const ToastDescription = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Description>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Description>

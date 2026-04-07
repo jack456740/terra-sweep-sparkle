@@ -9,6 +9,10 @@ const Tooltip = TooltipPrimitive.Root;
 
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
+/**
+ * Tooltip Content component.
+ * @returns The rendered Tooltip Content component.
+ */
 const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>

@@ -6,6 +6,10 @@ import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
+/**
+ * Command component.
+ * @returns The rendered Command component.
+ */
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive>
@@ -23,6 +27,12 @@ Command.displayName = CommandPrimitive.displayName;
 
 type CommandDialogProps = DialogProps;
 
+/**
+ * Command Dialog component.
+ *  * 
+ *  * @param props - The component props.
+ * @returns The rendered Command Dialog component.
+ */
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (
     <Dialog {...props}>
@@ -35,6 +45,10 @@ const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   );
 };
 
+/**
+ * Command Input component.
+ * @returns The rendered Command Input component.
+ */
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
@@ -54,6 +68,10 @@ const CommandInput = React.forwardRef<
 
 CommandInput.displayName = CommandPrimitive.Input.displayName;
 
+/**
+ * Command List component.
+ * @returns The rendered Command List component.
+ */
 const CommandList = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
@@ -67,6 +85,10 @@ const CommandList = React.forwardRef<
 
 CommandList.displayName = CommandPrimitive.List.displayName;
 
+/**
+ * Command Empty component.
+ * @returns The rendered Command Empty component.
+ */
 const CommandEmpty = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Empty>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty>
@@ -74,6 +96,10 @@ const CommandEmpty = React.forwardRef<
 
 CommandEmpty.displayName = CommandPrimitive.Empty.displayName;
 
+/**
+ * Command Group component.
+ * @returns The rendered Command Group component.
+ */
 const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
@@ -90,6 +116,10 @@ const CommandGroup = React.forwardRef<
 
 CommandGroup.displayName = CommandPrimitive.Group.displayName;
 
+/**
+ * Command Separator component.
+ * @returns The rendered Command Separator component.
+ */
 const CommandSeparator = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Separator>
@@ -98,6 +128,10 @@ const CommandSeparator = React.forwardRef<
 ));
 CommandSeparator.displayName = CommandPrimitive.Separator.displayName;
 
+/**
+ * Command Item component.
+ * @returns The rendered Command Item component.
+ */
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
@@ -114,6 +148,12 @@ const CommandItem = React.forwardRef<
 
 CommandItem.displayName = CommandPrimitive.Item.displayName;
 
+/**
+ * Command Shortcut component.
+ *  * 
+ *  * @param props - The component props.
+ * @returns The rendered Command Shortcut component.
+ */
 const CommandShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
   return <span className={cn("ml-auto text-xs tracking-widest text-muted-foreground", className)} {...props} />;
 };

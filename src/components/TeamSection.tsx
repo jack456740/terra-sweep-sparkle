@@ -7,6 +7,10 @@ const teamMembers = [
   { name: "Jaleel Williams", role: "Team Member", initials: "JW" },
 ];
 
+/**
+ * Team Section component.
+ * @returns The rendered Team Section component.
+ */
 export function TeamSection() {
   return (
     <section id="team" className="py-20 px-4 bg-card">

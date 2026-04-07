@@ -4,6 +4,10 @@ import { cn } from "@/lib/utils";
 
 export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
+/**
+ * Textarea component.
+ * @returns The rendered Textarea component.
+ */
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => {
   return (
     <textarea
