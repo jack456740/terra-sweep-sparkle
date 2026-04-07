@@ -1,5 +1,6 @@
 import { apiClient, type ApiClientError } from "@/lib/api/client";
 import { getApiEnvironmentConfig } from "@/lib/config";
+import { retryWithBackoff } from "@/lib/retry";
 import type { DeployState, RobotStatus } from "@/lib/constants";
 
 export type RobotStatusResponse = {
@@ -46,10 +47,30 @@ function normalizeServiceError(err: unknown): ApiClientError {
   };
 }
 
+function isRetryableRobotError(err: unknown): boolean {
+  const error = normalizeServiceError(err);
+
+  if (error.code === "TIMEOUT" || error.code === "NETWORK_ERROR") {
+    return true;
+  }
+
+  return error.code === "HTTP_ERROR" && !!error.status && error.status >= 500;
+}
+
+const RETRY_OPTIONS = {
+  retries: 2,
+  baseDelayMs: 300,
+  maxDelayMs: 2500,
+  shouldRetry: isRetryableRobotError,
+} as const;
+
 export const robotService = {
   async deployRobot(): Promise<RobotCommandResponse> {
     try {
-      const response = await apiClient.post<RobotCommandResponse>("/robot/deploy");
+      const response = await retryWithBackoff(
+        () => apiClient.post<RobotCommandResponse>("/robot/deploy"),
+        RETRY_OPTIONS
+      );
       return response.data;
     } catch (err) {
       throw normalizeServiceError(err);
@@ -58,7 +79,10 @@ export const robotService = {
 
   async stopRobot(): Promise<RobotCommandResponse> {
     try {
-      const response = await apiClient.post<RobotCommandResponse>("/robot/stop");
+      const response = await retryWithBackoff(
+        () => apiClient.post<RobotCommandResponse>("/robot/stop"),
+        RETRY_OPTIONS
+      );
       return response.data;
     } catch (err) {
       throw normalizeServiceError(err);
@@ -67,7 +91,10 @@ export const robotService = {
 
   async getRobotStatus(): Promise<RobotStatusResponse> {
     try {
-      const response = await apiClient.get<RobotStatusResponse>("/robot/status");
+      const response = await retryWithBackoff(
+        () => apiClient.get<RobotStatusResponse>("/robot/status"),
+        RETRY_OPTIONS
+      );
       return response.data;
     } catch (err) {
       throw normalizeServiceError(err);
