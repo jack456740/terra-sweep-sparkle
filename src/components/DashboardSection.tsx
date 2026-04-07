@@ -9,6 +9,7 @@ import {
   ROBOT_STATUS, 
   DEPLOY_STATE, 
   LOCATIONS, 
+  type Location,
   type RobotStatus, 
   type DeployState 
 } from "@/lib/constants";
@@ -20,16 +21,16 @@ const config = getConfig();
 export function DashboardSection() {
   const [deployState, setDeployState] = useState<DeployState>(DEPLOY_STATE.IDLE);
   const [robotStatus, setRobotStatus] = useState<RobotStatus>(ROBOT_STATUS.IDLE);
-  const [battery, setBattery] = useState(config.battery.initialPercentage);
-  const [location, setLocation] = useState(LOCATIONS.HOME_BASE);
-  const [cleaningProgress, setCleaningProgress] = useState(config.cleaning.initialProgress);
+  const [battery, setBattery] = useState<number>(config.battery.initialPercentage);
+  const [location, setLocation] = useState<Location>(LOCATIONS.HOME_BASE);
+  const [cleaningProgress, setCleaningProgress] = useState<number>(config.cleaning.initialProgress);
   const batteryRef = useRef<number>(config.battery.initialPercentage);
   const cleaningProgressRef = useRef<number>(config.cleaning.initialProgress);
 
   // Defensively avoid updating state after unmount.
   const isMountedRef = useRef<boolean>(true);
-  const deployTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
-  const stopTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const deployTimeoutRef = useRef<number | null>(null);
+  const stopTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
