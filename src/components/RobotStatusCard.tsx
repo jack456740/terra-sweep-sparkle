@@ -7,7 +7,14 @@ interface RobotStatusCardProps {
   location?: string;
 }
 
-const statusConfig: Record<RobotStatus, { label: string; color: string; bgColor: string; animate: boolean }> = {
+interface StatusConfig {
+  label: string;
+  color: string;
+  bgColor: string;
+  animate: boolean;
+}
+
+const statusConfig: Record<RobotStatus, StatusConfig> = {
   idle: {
     label: "Idle",
     color: "text-muted-foreground",
@@ -46,7 +53,7 @@ const statusConfig: Record<RobotStatus, { label: string; color: string; bgColor:
  *  * @param props - The component props.
  * @returns The rendered Robot Status Card component.
  */
-export function RobotStatusCard({ status, location = LOCATIONS.HOME_BASE }: RobotStatusCardProps) {
+export function RobotStatusCard({ status, location = LOCATIONS.HOME_BASE }: RobotStatusCardProps): JSX.Element {
   const config = statusConfig[status];
   const isConnected = status !== ROBOT_STATUS.OFFLINE;
 

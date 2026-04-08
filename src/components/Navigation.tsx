@@ -15,7 +15,7 @@ const navLinks = [
  * Navigation component.
  * @returns The rendered Navigation component.
  */
-export function Navigation() {
+export function Navigation(): JSX.Element {
   const [isOpen, setIsOpen] = useState(false);
 
   return (

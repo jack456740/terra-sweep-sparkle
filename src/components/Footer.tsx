@@ -4,7 +4,7 @@ import { Bot } from "lucide-react";
  * Footer component.
  * @returns The rendered Footer component.
  */
-export function Footer() {
+export function Footer(): JSX.Element {
   return (
     <footer className="py-12 px-4 bg-foreground text-background">
       <div className="container mx-auto max-w-6xl">

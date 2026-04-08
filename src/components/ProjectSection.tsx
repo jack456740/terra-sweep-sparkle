@@ -27,7 +27,7 @@ const features = [
  * Project Section component.
  * @returns The rendered Project Section component.
  */
-export function ProjectSection() {
+export function ProjectSection(): JSX.Element {
   return (
     <section id="project" className="py-20 px-4 bg-card">
       <div className="container mx-auto max-w-6xl">

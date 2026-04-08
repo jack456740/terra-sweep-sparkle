@@ -11,7 +11,7 @@ const teamMembers = [
  * Team Section component.
  * @returns The rendered Team Section component.
  */
-export function TeamSection() {
+export function TeamSection(): JSX.Element {
   return (
     <section id="team" className="py-20 px-4 bg-card">
       <div className="container mx-auto max-w-6xl">
