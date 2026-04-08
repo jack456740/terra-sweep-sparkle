@@ -67,15 +67,22 @@ export function DashboardSection() {
           </div>
         </div>
 
-        {/* Bottom row: Activity Log + Quick Stats */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-1">
-            <SystemActivityLog robotStatus={robotStatus} batteryLevel={batteryLevel} />
+        {/* Middle row: Floor Plan + Activity Log */}
+        <div className="grid gap-6 lg:grid-cols-5 mb-6">
+          <div className="lg:col-span-3">
+            <FloorPlanMap
+              robotStatus={robotStatus}
+              currentLocation={currentLocation}
+              cleaningProgress={cleaningProgress}
+            />
           </div>
           <div className="lg:col-span-2">
-            <DashboardQuickStats />
+            <SystemActivityLog robotStatus={robotStatus} batteryLevel={batteryLevel} />
           </div>
         </div>
+
+        {/* Bottom row: Quick Stats */}
+        <DashboardQuickStats />
       </div>
     </section>
   );
