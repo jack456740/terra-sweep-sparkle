@@ -8,7 +8,7 @@ import { getRobotSimulationStep } from '@/features/robot/robotSimulationStep';
 const config = getConfig();
 
 export function useRobotSimulation() {
-  const { robotStatus, batteryLevel, currentLocation, cleaningProgress, updateStatus } = useRobotStore();
+  const { robotStatus, batteryLevel, cleaningProgress, updateStatus } = useRobotStore();
   const batteryLevelRef = useRef<number>(batteryLevel);
   const cleaningProgressRef = useRef<number>(cleaningProgress);
   const isMountedRef = useRef<boolean>(true);
