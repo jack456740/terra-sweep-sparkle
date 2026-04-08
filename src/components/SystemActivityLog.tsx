@@ -70,7 +70,7 @@ interface SystemActivityLogProps {
   batteryLevel: number;
 }
 
-export function SystemActivityLog({ robotStatus, batteryLevel }: SystemActivityLogProps) {
+export function SystemActivityLog({ robotStatus, batteryLevel }: SystemActivityLogProps): JSX.Element {
   const entries = getActivityLog(robotStatus, batteryLevel);
 
   return (

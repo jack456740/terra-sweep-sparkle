@@ -1,6 +1,6 @@
 import { DASHBOARD_QUICK_STATS } from "@/features/dashboard/quickStats";
 
-export function DashboardQuickStats() {
+export function DashboardQuickStats(): JSX.Element {
   return (
     <div className="mt-8 glass rounded-2xl p-6 shadow-card">
       <h3 className="font-heading text-lg font-semibold text-foreground mb-4">

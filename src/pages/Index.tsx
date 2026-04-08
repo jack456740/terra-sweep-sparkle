@@ -11,7 +11,7 @@ import { Footer } from "@/components/Footer";
  * Index component.
  * @returns The rendered Index component.
  */
-const Index = () => {
+const Index = (): JSX.Element => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />

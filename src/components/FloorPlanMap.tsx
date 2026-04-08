@@ -85,7 +85,7 @@ export function FloorPlanMap({
   robotStatus,
   currentLocation,
   cleaningProgress,
-}: FloorPlanMapProps) {
+}: FloorPlanMapProps): JSX.Element {
   const robotPos = useMemo(
     () => getRobotPosition(robotStatus, cleaningProgress),
     [robotStatus, cleaningProgress]

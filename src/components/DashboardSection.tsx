@@ -11,7 +11,7 @@ import { useDashboardController } from "@/features/dashboard/useDashboardControl
  * Dashboard Section component.
  * @returns The rendered Dashboard Section component.
  */
-export function DashboardSection() {
+export function DashboardSection(): JSX.Element {
   const {
     deployState,
     robotStatus,

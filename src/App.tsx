@@ -13,7 +13,7 @@ const queryClient = new QueryClient();
  * App component.
  * @returns The rendered App component.
  */
-const App = () => (
+const App = (): JSX.Element => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

@@ -15,7 +15,7 @@ interface DeployButtonProps {
  *  * @param props - The component props.
  * @returns The rendered Deploy Button component.
  */
-export function DeployButton({ state, onDeploy, onStop, disabled = false }: DeployButtonProps) {
+export function DeployButton({ state, onDeploy, onStop, disabled = false }: DeployButtonProps): JSX.Element {
   const isDeployed = state === DEPLOY_STATE.DEPLOYED || state === DEPLOY_STATE.DEPLOYING;
 
   return (

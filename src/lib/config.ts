@@ -94,6 +94,38 @@ export const TIMING_CONFIG = {
 
 export type AppEnvironment = "development" | "staging" | "production";
 
+export interface TimingConfig {
+  deployTimeoutMs: number;
+  returnTimeoutMs: number;
+  cleaningIntervalMs: number;
+}
+
+export interface BatteryConfig {
+  lowThreshold: number;
+  initialPercentage: number;
+  decrementPerInterval: number;
+  maxPercentage: number;
+  minPercentage: number;
+}
+
+export interface CleaningConfig {
+  initialProgress: number;
+  maxProgress: number;
+  progressIncrement: number;
+}
+
+export interface AppConfig {
+  timing: TimingConfig;
+  battery: BatteryConfig;
+  cleaning: CleaningConfig;
+}
+
+export interface ApiEnvironmentConfig {
+  environment: AppEnvironment;
+  apiBaseUrl: string;
+  wsUrl: string;
+}
+
 const DEFAULT_API_ENDPOINTS: Record<AppEnvironment, { apiBaseUrl: string; wsUrl: string }> = {
   development: {
     apiBaseUrl: "http://localhost:3000/api",
@@ -126,7 +158,7 @@ function resolveAppEnvironment(): AppEnvironment {
  * Allows configuration values to be overridden via environment variables.
  * Falls back to default values if environment variables are not set.
  */
-export const getConfig = () => {
+export const getConfig = (): AppConfig => {
   const deployTimeout = import.meta.env.VITE_DEPLOY_TIMEOUT_MS 
     ? Number(import.meta.env.VITE_DEPLOY_TIMEOUT_MS) 
     : TIMING_CONFIG.DEPLOY_TIMEOUT_MS;
@@ -180,7 +212,7 @@ export const getConfig = () => {
   };
 };
 
-export const getApiEnvironmentConfig = () => {
+export const getApiEnvironmentConfig = (): ApiEnvironmentConfig => {
   const environment = resolveAppEnvironment();
   const defaults = DEFAULT_API_ENDPOINTS[environment];
   const envSpecificApiBaseUrl =
