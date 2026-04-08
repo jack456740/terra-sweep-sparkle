@@ -3,6 +3,7 @@ import { RobotStatusCard } from "@/components/RobotStatusCard";
 import { BatteryIndicator } from "@/components/BatteryIndicator";
 import { CleaningProgress } from "@/components/CleaningProgress";
 import { SystemActivityLog } from "@/components/SystemActivityLog";
+import { FloorPlanMap } from "@/components/FloorPlanMap";
 import { DashboardQuickStats } from "@/features/dashboard/components/DashboardQuickStats";
 import { useDashboardController } from "@/features/dashboard/useDashboardController";
 
