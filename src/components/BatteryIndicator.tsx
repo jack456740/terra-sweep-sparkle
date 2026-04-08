@@ -1,4 +1,4 @@
-import { Battery, BatteryCharging, BatteryLow, BatteryMedium, BatteryFull, Zap } from "lucide-react";
+import { BatteryCharging, BatteryLow, BatteryMedium, BatteryFull, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BatteryIndicatorProps {

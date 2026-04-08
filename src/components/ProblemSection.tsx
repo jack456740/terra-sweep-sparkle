@@ -38,7 +38,7 @@ export function ProblemSection() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {benefits.map((benefit, index) => (
+          {benefits.map((benefit) => (
             <div
               key={benefit.label}
               className="glass rounded-xl p-4 flex items-center gap-3 shadow-card hover:shadow-soft transition-shadow"

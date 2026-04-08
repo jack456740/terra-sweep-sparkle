@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { Bot, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { RobotStatus } from "@/lib/constants";
 
@@ -37,7 +36,6 @@ function getZoneStatus(
 
 function getRobotPosition(
   robotStatus: RobotStatus,
-  currentLocation: string,
   cleaningProgress: number
 ): { x: number; y: number } {
   if (
@@ -89,8 +87,8 @@ export function FloorPlanMap({
   cleaningProgress,
 }: FloorPlanMapProps) {
   const robotPos = useMemo(
-    () => getRobotPosition(robotStatus, currentLocation, cleaningProgress),
-    [robotStatus, currentLocation, cleaningProgress]
+    () => getRobotPosition(robotStatus, cleaningProgress),
+    [robotStatus, cleaningProgress]
   );
 
   const isCleaning = robotStatus === "cleaning";
