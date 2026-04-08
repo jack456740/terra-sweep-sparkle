@@ -5,7 +5,7 @@ import { useEffect } from "react";
  * Not Found component.
  * @returns The rendered Not Found component.
  */
-const NotFound = () => {
+const NotFound = (): JSX.Element => {
   const location = useLocation();
 
   useEffect(() => {

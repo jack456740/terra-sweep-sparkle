@@ -11,7 +11,7 @@ export function useDashboardRobotViewState({
   robotStatus,
   cleaningProgress,
   maxProgress,
-}: Params) {
+}: Params): { cleaningProgress: number; isCharging: boolean; isCleaning: boolean; isControlDisabled: boolean } {
   return useMemo(
     () => ({
       cleaningProgress: Math.min(cleaningProgress, maxProgress),
