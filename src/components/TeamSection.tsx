@@ -2,7 +2,6 @@ import { cn } from "@/lib/utils";
 
 const teamMembers = [
   { name: "Alvin Rogers", role: "Team Member", initials: "AR" },
-  { name: "Carolyn Winn", role: "Team Member", initials: "CW" },
   { name: "Nicasio Smith", role: "Team Member", initials: "NS" },
   { name: "Jaleel Williams", role: "Team Member", initials: "JW" },
 ];
