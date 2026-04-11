@@ -204,6 +204,16 @@ export function FloorPlanMap({
     [robotStatus, cleaningProgress]
   );
 
+  const trashTarget = useMemo(() => {
+    if (robotStatus !== "cleaning") return null;
+    const { zoneIndex, trashIndex } = getTrashTargetIndex(cleaningProgress);
+    const zone = ZONES[zoneIndex];
+    const zoneTrash = getZoneTrash(zone.cleanOrder);
+    if (zoneTrash.length === 0) return null;
+    const t = zoneTrash[trashIndex];
+    return { x: t.cx, y: t.cy };
+  }, [robotStatus, cleaningProgress]);
+
   const isCleaning = robotStatus === "cleaning";
 
   return (
@@ -444,6 +454,29 @@ export function FloorPlanMap({
               BASE
             </text>
           </g>
+
+          {/* Targeting line from robot to current trash */}
+          {isCleaning && trashTarget && (
+            <>
+              <defs>
+                <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill="hsl(168, 76%, 42%)" opacity="0.6" />
+                </marker>
+              </defs>
+              <line
+                x1={robotPos.x}
+                y1={robotPos.y}
+                x2={trashTarget.x}
+                y2={trashTarget.y}
+                stroke="hsl(168, 76%, 42%)"
+                strokeWidth="1.5"
+                strokeDasharray="4 3"
+                opacity="0.5"
+                markerEnd="url(#arrowhead)"
+                className="transition-all duration-1000 ease-in-out"
+              />
+            </>
+          )}
 
           {/* Robot trail (subtle) */}
           {isCleaning && (
