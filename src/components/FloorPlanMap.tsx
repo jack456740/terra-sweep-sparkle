@@ -16,6 +16,30 @@ const ZONES = [
   { id: "zone-d", label: "Zone D", x: 240, y: 180, w: 200, h: 140, cleanOrder: 4 },
 ] as const;
 
+/** Trash items (green) — collected when zone is cleaned */
+const TRASH_ITEMS = [
+  { id: "t1", zoneOrder: 1, cx: 70, cy: 65, shape: "leaf" as const },
+  { id: "t2", zoneOrder: 1, cx: 160, cy: 110, shape: "bottle" as const },
+  { id: "t3", zoneOrder: 1, cx: 120, cy: 140, shape: "wrapper" as const },
+  { id: "t4", zoneOrder: 2, cx: 300, cy: 55, shape: "leaf" as const },
+  { id: "t5", zoneOrder: 2, cx: 370, cy: 100, shape: "bottle" as const },
+  { id: "t6", zoneOrder: 2, cx: 330, cy: 135, shape: "wrapper" as const },
+  { id: "t7", zoneOrder: 3, cx: 80, cy: 220, shape: "leaf" as const },
+  { id: "t8", zoneOrder: 3, cx: 150, cy: 270, shape: "bottle" as const },
+  { id: "t9", zoneOrder: 3, cx: 110, cy: 300, shape: "wrapper" as const },
+  { id: "t10", zoneOrder: 4, cx: 310, cy: 210, shape: "leaf" as const },
+  { id: "t11", zoneOrder: 4, cx: 380, cy: 260, shape: "bottle" as const },
+  { id: "t12", zoneOrder: 4, cx: 340, cy: 295, shape: "wrapper" as const },
+];
+
+/** Obstacles (red) — robot avoids these */
+const OBSTACLES = [
+  { id: "o1", cx: 190, cy: 90, r: 10, label: "Rock" },
+  { id: "o2", cx: 410, cy: 70, r: 12, label: "Bench" },
+  { id: "o3", cx: 60, cy: 260, r: 11, label: "Pot" },
+  { id: "o4", cx: 400, cy: 240, r: 10, label: "Post" },
+];
+
 const BASE = { x: 440, y: 300, label: "Base" };
 
 function getZoneStatus(
