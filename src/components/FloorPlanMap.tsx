@@ -86,6 +86,54 @@ function avoidObstacles(pos: { x: number; y: number }, zoneIndex: number): { x: 
   return { x, y };
 }
 
+/** Get trash items for a given zone order */
+function getZoneTrash(zoneOrder: number) {
+  return TRASH_ITEMS.filter((t) => t.zoneOrder === zoneOrder);
+}
+
+/** Determine which trash item (0-based) in a zone the robot is targeting */
+function getTrashTargetIndex(cleaningProgress: number): { zoneIndex: number; trashIndex: number; subProgress: number } {
+  const perZone = 100 / ZONES.length;
+  const activeIndex = Math.min(Math.floor(cleaningProgress / perZone), ZONES.length - 1);
+  const withinZone = (cleaningProgress % perZone) / perZone;
+  const zoneTrash = getZoneTrash(ZONES[activeIndex].cleanOrder);
+  const trashCount = zoneTrash.length || 1;
+  const perTrash = 1 / trashCount;
+  const trashIndex = Math.min(Math.floor(withinZone / perTrash), trashCount - 1);
+  const subProgress = (withinZone - trashIndex * perTrash) / perTrash; // 0→1 within this trash target
+  return { zoneIndex: activeIndex, trashIndex, subProgress };
+}
+
+/** Check if a specific trash item has been collected */
+function isTrashCollected(item: typeof TRASH_ITEMS[number], cleaningProgress: number, robotStatus: RobotStatus): boolean {
+  if (robotStatus !== "cleaning" && robotStatus !== "returning" && cleaningProgress === 0) return false;
+  const perZone = 100 / ZONES.length;
+  const zoneStart = (item.zoneOrder - 1) * perZone;
+  const zoneEnd = item.zoneOrder * perZone;
+  if (cleaningProgress >= zoneEnd) return true; // whole zone done
+  if (cleaningProgress <= zoneStart) return false;
+  // Within the zone — check per-trash progress
+  const withinZone = (cleaningProgress - zoneStart) / perZone;
+  const zoneTrash = getZoneTrash(item.zoneOrder);
+  const idx = zoneTrash.indexOf(item);
+  const perTrash = 1 / zoneTrash.length;
+  return withinZone >= (idx + 1) * perTrash;
+}
+
+/** Check if robot is currently targeting this trash item */
+function isTrashBeingTargeted(item: typeof TRASH_ITEMS[number], cleaningProgress: number, robotStatus: RobotStatus): boolean {
+  if (robotStatus !== "cleaning") return false;
+  const perZone = 100 / ZONES.length;
+  const zoneStart = (item.zoneOrder - 1) * perZone;
+  const zoneEnd = item.zoneOrder * perZone;
+  if (cleaningProgress >= zoneEnd || cleaningProgress <= zoneStart) return false;
+  const withinZone = (cleaningProgress - zoneStart) / perZone;
+  const zoneTrash = getZoneTrash(item.zoneOrder);
+  const idx = zoneTrash.indexOf(item);
+  const perTrash = 1 / zoneTrash.length;
+  return withinZone >= idx * perTrash && withinZone < (idx + 1) * perTrash;
+}
+
 function getRobotPosition(
   robotStatus: RobotStatus,
   cleaningProgress: number
@@ -106,19 +154,32 @@ function getRobotPosition(
       y: (zoneCy + BASE.y) / 2,
     };
   }
-  // Cleaning — place in active zone with obstacle avoidance
-  const perZone = 100 / ZONES.length;
-  const activeIndex = Math.min(
-    Math.floor(cleaningProgress / perZone),
-    ZONES.length - 1
-  );
-  const zone = ZONES[activeIndex];
-  const withinZone = (cleaningProgress % perZone) / perZone;
+  // Cleaning — move toward current trash target
+  const { zoneIndex, trashIndex, subProgress } = getTrashTargetIndex(cleaningProgress);
+  const zone = ZONES[zoneIndex];
+  const zoneTrash = getZoneTrash(zone.cleanOrder);
+
+  if (zoneTrash.length === 0) {
+    // No trash — sweep across zone
+    const withinZone = (cleaningProgress % (100 / ZONES.length)) / (100 / ZONES.length);
+    return avoidObstacles({
+      x: zone.x + 30 + withinZone * (zone.w - 60),
+      y: zone.y + zone.h / 2,
+    }, zoneIndex);
+  }
+
+  const target = zoneTrash[trashIndex];
+  // Start from previous trash position or zone entry point
+  const prev = trashIndex > 0
+    ? { x: zoneTrash[trashIndex - 1].cx, y: zoneTrash[trashIndex - 1].cy }
+    : { x: zone.x + 20, y: zone.y + zone.h / 2 };
+
+  // Interpolate from prev toward target trash
   const rawPos = {
-    x: zone.x + 30 + withinZone * (zone.w - 60),
-    y: zone.y + zone.h / 2 + Math.sin(withinZone * Math.PI * 4) * 20,
+    x: prev.x + (target.cx - prev.x) * subProgress,
+    y: prev.y + (target.cy - prev.y) * subProgress,
   };
-  return avoidObstacles(rawPos, activeIndex);
+  return avoidObstacles(rawPos, zoneIndex);
 }
 
 const statusFill: Record<string, string> = {
