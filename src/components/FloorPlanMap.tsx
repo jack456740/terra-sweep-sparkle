@@ -16,6 +16,30 @@ const ZONES = [
   { id: "zone-d", label: "Zone D", x: 240, y: 180, w: 200, h: 140, cleanOrder: 4 },
 ] as const;
 
+/** Trash items (green) — collected when zone is cleaned */
+const TRASH_ITEMS = [
+  { id: "t1", zoneOrder: 1, cx: 70, cy: 65, shape: "leaf" as const },
+  { id: "t2", zoneOrder: 1, cx: 160, cy: 110, shape: "bottle" as const },
+  { id: "t3", zoneOrder: 1, cx: 120, cy: 140, shape: "wrapper" as const },
+  { id: "t4", zoneOrder: 2, cx: 300, cy: 55, shape: "leaf" as const },
+  { id: "t5", zoneOrder: 2, cx: 370, cy: 100, shape: "bottle" as const },
+  { id: "t6", zoneOrder: 2, cx: 330, cy: 135, shape: "wrapper" as const },
+  { id: "t7", zoneOrder: 3, cx: 80, cy: 220, shape: "leaf" as const },
+  { id: "t8", zoneOrder: 3, cx: 150, cy: 270, shape: "bottle" as const },
+  { id: "t9", zoneOrder: 3, cx: 110, cy: 300, shape: "wrapper" as const },
+  { id: "t10", zoneOrder: 4, cx: 310, cy: 210, shape: "leaf" as const },
+  { id: "t11", zoneOrder: 4, cx: 380, cy: 260, shape: "bottle" as const },
+  { id: "t12", zoneOrder: 4, cx: 340, cy: 295, shape: "wrapper" as const },
+];
+
+/** Obstacles (red) — robot avoids these */
+const OBSTACLES = [
+  { id: "o1", cx: 190, cy: 90, r: 10, label: "Rock" },
+  { id: "o2", cx: 410, cy: 70, r: 12, label: "Bench" },
+  { id: "o3", cx: 60, cy: 260, r: 11, label: "Pot" },
+  { id: "o4", cx: 400, cy: 240, r: 10, label: "Post" },
+];
+
 const BASE = { x: 440, y: 300, label: "Base" };
 
 function getZoneStatus(
@@ -116,10 +140,14 @@ export function FloorPlanMap({
           </h3>
         </div>
         {/* Legend */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-sm bg-muted border border-border" />
-            Pending
+            <span className="w-2.5 h-2.5 rounded-full bg-[hsl(142,70%,45%)]" />
+            Trash
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-[hsl(0,70%,50%)]" />
+            Obstacle
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-sm bg-primary/20 border border-primary" />
@@ -235,7 +263,78 @@ export function FloorPlanMap({
             );
           })}
 
-          {/* Dock / Base Station */}
+          {/* Trash items (green) — disappear when zone is cleaned */}
+          {TRASH_ITEMS.map((item) => {
+            const zoneStatus = getZoneStatus(item.zoneOrder, cleaningProgress, robotStatus);
+            const collected = zoneStatus === "cleaned";
+            const beingCollected = zoneStatus === "cleaning";
+            return (
+              <g
+                key={item.id}
+                opacity={collected ? 0 : beingCollected ? 0.5 : 1}
+                className="transition-opacity duration-700"
+              >
+                {item.shape === "leaf" && (
+                  <g transform={`translate(${item.cx}, ${item.cy})`}>
+                    <ellipse rx="7" ry="4" fill="hsl(142, 70%, 45%)" transform="rotate(-30)" />
+                    <line x1="0" y1="0" x2="5" y2="3" stroke="hsl(142, 50%, 35%)" strokeWidth="0.8" />
+                  </g>
+                )}
+                {item.shape === "bottle" && (
+                  <g transform={`translate(${item.cx}, ${item.cy})`}>
+                    <rect x="-3" y="-7" width="6" height="14" rx="2" fill="hsl(142, 70%, 45%)" />
+                    <rect x="-1.5" y="-10" width="3" height="4" rx="1" fill="hsl(142, 60%, 40%)" />
+                  </g>
+                )}
+                {item.shape === "wrapper" && (
+                  <g transform={`translate(${item.cx}, ${item.cy})`}>
+                    <polygon points="-6,-4 6,-4 5,4 -5,4" fill="hsl(142, 70%, 45%)" />
+                    <line x1="-3" y1="0" x2="3" y2="0" stroke="hsl(142, 50%, 35%)" strokeWidth="0.6" />
+                  </g>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Obstacles (red) — always visible */}
+          {OBSTACLES.map((obs) => (
+            <g key={obs.id}>
+              <circle
+                cx={obs.cx}
+                cy={obs.cy}
+                r={obs.r}
+                fill="hsl(0, 70%, 50%, 0.2)"
+                stroke="hsl(0, 70%, 50%)"
+                strokeWidth="1.5"
+              />
+              <line
+                x1={obs.cx - obs.r * 0.5}
+                y1={obs.cy - obs.r * 0.5}
+                x2={obs.cx + obs.r * 0.5}
+                y2={obs.cy + obs.r * 0.5}
+                stroke="hsl(0, 70%, 50%)"
+                strokeWidth="1.5"
+              />
+              <line
+                x1={obs.cx + obs.r * 0.5}
+                y1={obs.cy - obs.r * 0.5}
+                x2={obs.cx - obs.r * 0.5}
+                y2={obs.cy + obs.r * 0.5}
+                stroke="hsl(0, 70%, 50%)"
+                strokeWidth="1.5"
+              />
+              <text
+                x={obs.cx}
+                y={obs.cy + obs.r + 10}
+                textAnchor="middle"
+                className="text-[8px]"
+                fill="hsl(0, 60%, 45%)"
+              >
+                {obs.label}
+              </text>
+            </g>
+          ))}
+
           <g>
             <rect
               x={BASE.x - 25}
