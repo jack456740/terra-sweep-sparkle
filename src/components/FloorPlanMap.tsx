@@ -362,7 +362,6 @@ export function FloorPlanMap({
                 opacity={collected ? 0 : targeted ? 0.6 : 1}
                 className="transition-opacity duration-700"
               >
-              >
                 {item.shape === "leaf" && (
                   <g transform={`translate(${item.cx}, ${item.cy})`}>
                     <ellipse rx="7" ry="4" fill="hsl(142, 70%, 45%)" transform="rotate(-30)" />
