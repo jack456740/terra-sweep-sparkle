@@ -58,6 +58,34 @@ function getZoneStatus(
   return "idle";
 }
 
+/** Push position away from nearby obstacles */
+function avoidObstacles(pos: { x: number; y: number }, zoneIndex: number): { x: number; y: number } {
+  let { x, y } = pos;
+  const avoidRadius = 28; // how close before dodging
+  const pushStrength = 22; // how far to push away
+
+  // Only consider obstacles in/near the current zone
+  for (const obs of OBSTACLES) {
+    const dx = x - obs.cx;
+    const dy = y - obs.cy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < avoidRadius) {
+      // Push away from obstacle
+      const angle = Math.atan2(dy, dx);
+      const push = (avoidRadius - dist) / avoidRadius * pushStrength;
+      x += Math.cos(angle) * push;
+      y += Math.sin(angle) * push;
+    }
+  }
+
+  // Clamp to zone bounds
+  const zone = ZONES[zoneIndex];
+  x = Math.max(zone.x + 12, Math.min(zone.x + zone.w - 12, x));
+  y = Math.max(zone.y + 12, Math.min(zone.y + zone.h - 12, y));
+
+  return { x, y };
+}
+
 function getRobotPosition(
   robotStatus: RobotStatus,
   cleaningProgress: number
@@ -70,7 +98,6 @@ function getRobotPosition(
     return { x: BASE.x, y: BASE.y };
   }
   if (robotStatus === "returning") {
-    // Animate between last zone and base
     const lastZone = ZONES[ZONES.length - 1];
     const zoneCx = lastZone.x + lastZone.w / 2;
     const zoneCy = lastZone.y + lastZone.h / 2;
@@ -79,7 +106,7 @@ function getRobotPosition(
       y: (zoneCy + BASE.y) / 2,
     };
   }
-  // Cleaning — place in active zone
+  // Cleaning — place in active zone with obstacle avoidance
   const perZone = 100 / ZONES.length;
   const activeIndex = Math.min(
     Math.floor(cleaningProgress / perZone),
@@ -87,10 +114,11 @@ function getRobotPosition(
   );
   const zone = ZONES[activeIndex];
   const withinZone = (cleaningProgress % perZone) / perZone;
-  return {
+  const rawPos = {
     x: zone.x + 30 + withinZone * (zone.w - 60),
     y: zone.y + zone.h / 2 + Math.sin(withinZone * Math.PI * 4) * 20,
   };
+  return avoidObstacles(rawPos, activeIndex);
 }
 
 const statusFill: Record<string, string> = {
