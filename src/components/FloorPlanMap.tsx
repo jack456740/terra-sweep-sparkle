@@ -352,16 +352,16 @@ export function FloorPlanMap({
             );
           })}
 
-          {/* Trash items (green) — disappear when zone is cleaned */}
+          {/* Trash items (green) — disappear individually as robot collects them */}
           {TRASH_ITEMS.map((item) => {
-            const zoneStatus = getZoneStatus(item.zoneOrder, cleaningProgress, robotStatus);
-            const collected = zoneStatus === "cleaned";
-            const beingCollected = zoneStatus === "cleaning";
+            const collected = isTrashCollected(item, cleaningProgress, robotStatus);
+            const targeted = isTrashBeingTargeted(item, cleaningProgress, robotStatus);
             return (
               <g
                 key={item.id}
-                opacity={collected ? 0 : beingCollected ? 0.5 : 1}
+                opacity={collected ? 0 : targeted ? 0.6 : 1}
                 className="transition-opacity duration-700"
+              >
               >
                 {item.shape === "leaf" && (
                   <g transform={`translate(${item.cx}, ${item.cy})`}>
