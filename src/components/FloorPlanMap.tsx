@@ -204,6 +204,16 @@ export function FloorPlanMap({
     [robotStatus, cleaningProgress]
   );
 
+  const trashTarget = useMemo(() => {
+    if (robotStatus !== "cleaning") return null;
+    const { zoneIndex, trashIndex } = getTrashTargetIndex(cleaningProgress);
+    const zone = ZONES[zoneIndex];
+    const zoneTrash = getZoneTrash(zone.cleanOrder);
+    if (zoneTrash.length === 0) return null;
+    const t = zoneTrash[trashIndex];
+    return { x: t.cx, y: t.cy };
+  }, [robotStatus, cleaningProgress]);
+
   const isCleaning = robotStatus === "cleaning";
 
   return (
