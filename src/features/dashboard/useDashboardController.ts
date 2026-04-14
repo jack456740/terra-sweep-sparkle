@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useRobotSimulation } from "@/hooks/useRobotSimulation";
 import { useRobotTelemetry } from "@/hooks/useRobotTelemetry";
 import { useMissionScriptSync } from "@/hooks/useMissionScriptSync";
@@ -21,9 +22,6 @@ interface DashboardController {
   isControlDisabled: boolean;
   handleDeploy: () => Promise<void>;
   handleStop: () => Promise<void>;
-  isMissionRunning: boolean;
-  handleStartScriptMission: () => Promise<void>;
-  handleStopScriptMission: () => void;
 }
 
 const config = getConfig();
@@ -52,6 +50,24 @@ export function useDashboardController(): DashboardController {
     stopScriptMission,
   } = useMissionScriptSync();
 
+  const handleDeployWithMode = useCallback(async () => {
+    if (telemetrySource === "live") {
+      await handleDeploy();
+      return;
+    }
+
+    await startScriptMission();
+  }, [handleDeploy, startScriptMission, telemetrySource]);
+
+  const handleStopWithMode = useCallback(async () => {
+    if (isMissionRunning) {
+      stopScriptMission();
+      return;
+    }
+
+    await handleStop();
+  }, [handleStop, isMissionRunning, stopScriptMission]);
+
   const dashboardViewState = useDashboardRobotViewState({
     robotStatus,
     cleaningProgress,
@@ -66,10 +82,7 @@ export function useDashboardController(): DashboardController {
     telemetrySource,
     pose,
     ...dashboardViewState,
-    handleDeploy,
-    handleStop,
-    isMissionRunning,
-    handleStartScriptMission: startScriptMission,
-    handleStopScriptMission: stopScriptMission,
+    handleDeploy: handleDeployWithMode,
+    handleStop: handleStopWithMode,
   };
 }

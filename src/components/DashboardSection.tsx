@@ -4,7 +4,6 @@ import { BatteryIndicator } from "@/components/BatteryIndicator";
 import { CleaningProgress } from "@/components/CleaningProgress";
 import { SystemActivityLog } from "@/components/SystemActivityLog";
 import { FloorPlanMap } from "@/components/FloorPlanMap";
-import { Button } from "@/components/ui/button";
 import { DashboardQuickStats } from "@/features/dashboard/components/DashboardQuickStats";
 import { useDashboardController } from "@/features/dashboard/useDashboardController";
 
@@ -26,9 +25,6 @@ export function DashboardSection(): JSX.Element {
     isControlDisabled,
     handleDeploy,
     handleStop,
-    isMissionRunning,
-    handleStartScriptMission,
-    handleStopScriptMission,
   } = useDashboardController();
 
   return (
@@ -44,14 +40,6 @@ export function DashboardSection(): JSX.Element {
           <p className="text-muted-foreground max-w-lg mx-auto">
             Monitor and control your Clean Bot in real-time with full system visibility
           </p>
-          <div className="mt-4">
-            <Button
-              variant={isMissionRunning ? "destructive" : "default"}
-              onClick={isMissionRunning ? handleStopScriptMission : () => void handleStartScriptMission()}
-            >
-              {isMissionRunning ? "Stop Script Sync Demo" : "Start Script Sync Demo"}
-            </Button>
-          </div>
         </div>
 
         {/* Top row: Status + Battery + Deploy */}
