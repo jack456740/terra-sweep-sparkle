@@ -1,0 +1,18 @@
+{
+  "id": "main-area-loop-v1",
+  "name": "Main Area Loop",
+  "durationSec": 64,
+  "keyframes": [
+    { "tSec": 0, "x": 0.98, "y": 0.94, "headingDeg": -160, "progress": 0, "status": "cleaning", "location": "Main Area" },
+    { "tSec": 8, "x": 0.12, "y": 0.16, "headingDeg": -140, "progress": 12, "status": "cleaning", "location": "Main Area" },
+    { "tSec": 14, "x": 0.40, "y": 0.20, "headingDeg": 0, "progress": 22, "status": "cleaning", "location": "Main Area" },
+    { "tSec": 20, "x": 0.78, "y": 0.13, "headingDeg": -30, "progress": 32, "status": "cleaning", "location": "Main Area" },
+    { "tSec": 27, "x": 0.83, "y": 0.45, "headingDeg": 100, "progress": 44, "status": "cleaning", "location": "Main Area" },
+    { "tSec": 34, "x": 0.56, "y": 0.71, "headingDeg": 145, "progress": 58, "status": "cleaning", "location": "Main Area" },
+    { "tSec": 41, "x": 0.26, "y": 0.80, "headingDeg": 170, "progress": 72, "status": "cleaning", "location": "Main Area" },
+    { "tSec": 48, "x": 0.16, "y": 0.55, "headingDeg": -110, "progress": 84, "status": "cleaning", "location": "Main Area" },
+    { "tSec": 54, "x": 0.37, "y": 0.39, "headingDeg": -35, "progress": 94, "status": "cleaning", "location": "Main Area" },
+    { "tSec": 58, "x": 0.74, "y": 0.72, "headingDeg": 45, "progress": 100, "status": "returning", "location": "Returning..." },
+    { "tSec": 64, "x": 0.98, "y": 0.94, "headingDeg": 0, "progress": 100, "status": "idle", "location": "Home Base" }
+  ]
+}

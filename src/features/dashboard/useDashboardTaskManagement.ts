@@ -32,7 +32,7 @@ export function useDashboardTaskManagement({
       updateStatus({
         deployState: DEPLOY_STATE.DEPLOYED,
         robotStatus: ROBOT_STATUS.CLEANING,
-        currentLocation: LOCATIONS.ZONE_A_NORTH,
+        currentLocation: LOCATIONS.MAIN_AREA,
       });
       toast.warning("Backend unavailable. Running local simulation mode.");
     }

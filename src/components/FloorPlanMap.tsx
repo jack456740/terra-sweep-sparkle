@@ -1,19 +1,19 @@
 import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 import type { RobotStatus } from "@/lib/constants";
+import type { RobotPose, TelemetrySource } from "@/store/types";
 
 interface FloorPlanMapProps {
   robotStatus: RobotStatus;
   currentLocation: string;
   cleaningProgress: number;
+  telemetrySource: TelemetrySource;
+  pose: RobotPose | null;
 }
 
 /** Zone definitions for the floor plan grid */
 const ZONES = [
-  { id: "zone-a", label: "Zone A", x: 20, y: 20, w: 200, h: 140, cleanOrder: 1 },
-  { id: "zone-b", label: "Zone B", x: 240, y: 20, w: 200, h: 140, cleanOrder: 2 },
-  { id: "zone-c", label: "Zone C", x: 20, y: 180, w: 200, h: 140, cleanOrder: 3 },
-  { id: "zone-d", label: "Zone D", x: 240, y: 180, w: 200, h: 140, cleanOrder: 4 },
+  { id: "main-area", label: "Main Area", x: 20, y: 20, w: 420, h: 300, cleanOrder: 1 },
 ] as const;
 
 /** Trash items (green) — collected when zone is cleaned */
@@ -21,15 +21,15 @@ const TRASH_ITEMS = [
   { id: "t1", zoneOrder: 1, cx: 70, cy: 65, shape: "leaf" as const },
   { id: "t2", zoneOrder: 1, cx: 160, cy: 110, shape: "bottle" as const },
   { id: "t3", zoneOrder: 1, cx: 120, cy: 140, shape: "wrapper" as const },
-  { id: "t4", zoneOrder: 2, cx: 300, cy: 55, shape: "leaf" as const },
-  { id: "t5", zoneOrder: 2, cx: 370, cy: 100, shape: "bottle" as const },
-  { id: "t6", zoneOrder: 2, cx: 330, cy: 135, shape: "wrapper" as const },
-  { id: "t7", zoneOrder: 3, cx: 80, cy: 220, shape: "leaf" as const },
-  { id: "t8", zoneOrder: 3, cx: 150, cy: 270, shape: "bottle" as const },
-  { id: "t9", zoneOrder: 3, cx: 110, cy: 300, shape: "wrapper" as const },
-  { id: "t10", zoneOrder: 4, cx: 310, cy: 210, shape: "leaf" as const },
-  { id: "t11", zoneOrder: 4, cx: 380, cy: 260, shape: "bottle" as const },
-  { id: "t12", zoneOrder: 4, cx: 340, cy: 295, shape: "wrapper" as const },
+  { id: "t4", zoneOrder: 1, cx: 300, cy: 55, shape: "leaf" as const },
+  { id: "t5", zoneOrder: 1, cx: 370, cy: 100, shape: "bottle" as const },
+  { id: "t6", zoneOrder: 1, cx: 330, cy: 135, shape: "wrapper" as const },
+  { id: "t7", zoneOrder: 1, cx: 80, cy: 220, shape: "leaf" as const },
+  { id: "t8", zoneOrder: 1, cx: 150, cy: 270, shape: "bottle" as const },
+  { id: "t9", zoneOrder: 1, cx: 110, cy: 300, shape: "wrapper" as const },
+  { id: "t10", zoneOrder: 1, cx: 310, cy: 210, shape: "leaf" as const },
+  { id: "t11", zoneOrder: 1, cx: 380, cy: 260, shape: "bottle" as const },
+  { id: "t12", zoneOrder: 1, cx: 340, cy: 295, shape: "wrapper" as const },
 ];
 
 /** Obstacles (red) — robot avoids these */
@@ -41,6 +41,7 @@ const OBSTACLES = [
 ];
 
 const BASE = { x: 440, y: 300, label: "Base" };
+const MAIN_ZONE = ZONES[0];
 
 function getZoneStatus(
   cleanOrder: number,
@@ -182,6 +183,39 @@ function getRobotPosition(
   return avoidObstacles(rawPos, zoneIndex);
 }
 
+function getRobotPositionFromPose(pose: RobotPose): { x: number; y: number } {
+  const normalizedX = Math.max(0, Math.min(1, pose.x));
+  const normalizedY = Math.max(0, Math.min(1, pose.y));
+
+  return {
+    x: MAIN_ZONE.x + normalizedX * MAIN_ZONE.w,
+    y: MAIN_ZONE.y + normalizedY * MAIN_ZONE.h,
+  };
+}
+
+function getRobotHeading(robotStatus: RobotStatus, cleaningProgress: number): number {
+  if (robotStatus === "returning") {
+    const pos = getRobotPosition(robotStatus, cleaningProgress);
+    return (Math.atan2(BASE.y - pos.y, BASE.x - pos.x) * 180) / Math.PI;
+  }
+
+  if (robotStatus !== "cleaning") {
+    return -90;
+  }
+
+  const nextProgress = Math.min(100, cleaningProgress + 1.2);
+  const current = getRobotPosition(robotStatus, cleaningProgress);
+  const next = getRobotPosition(robotStatus, nextProgress);
+  const dx = next.x - current.x;
+  const dy = next.y - current.y;
+
+  if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) {
+    return -90;
+  }
+
+  return (Math.atan2(dy, dx) * 180) / Math.PI;
+}
+
 const statusFill: Record<string, string> = {
   idle: "hsl(165, 20%, 92%)",
   cleaning: "hsl(168, 76%, 42%, 0.18)",
@@ -198,10 +232,22 @@ export function FloorPlanMap({
   robotStatus,
   currentLocation,
   cleaningProgress,
+  telemetrySource,
+  pose,
 }: FloorPlanMapProps): JSX.Element {
-  const robotPos = useMemo(
-    () => getRobotPosition(robotStatus, cleaningProgress),
-    [robotStatus, cleaningProgress]
+  const robotPos = useMemo(() => {
+    if (telemetrySource === "live" && pose) {
+      return getRobotPositionFromPose(pose);
+    }
+    return getRobotPosition(robotStatus, cleaningProgress);
+  }, [robotStatus, cleaningProgress, telemetrySource, pose]);
+
+  const robotHeading = useMemo(
+    () =>
+      telemetrySource === "live" && pose?.headingDeg !== undefined
+        ? pose.headingDeg
+        : getRobotHeading(robotStatus, cleaningProgress),
+    [robotStatus, cleaningProgress, telemetrySource, pose]
   );
 
   const trashTarget = useMemo(() => {
@@ -490,23 +536,75 @@ export function FloorPlanMap({
             />
           )}
 
-          {/* Robot dot */}
+          {/* Cartoon robot avatar */}
           <g
             className="transition-all duration-1000 ease-in-out"
             style={{
               transform: `translate(${robotPos.x}px, ${robotPos.y}px)`,
             }}
           >
-            <circle
-              cx="0"
-              cy="0"
-              r="10"
-              fill="hsl(168, 76%, 42%)"
-              stroke="hsl(0, 0%, 100%)"
-              strokeWidth="2.5"
+            <g
               className={cn(isCleaning && "drop-shadow-md")}
-            />
-            <circle cx="0" cy="0" r="3" fill="hsl(0, 0%, 100%)" />
+              style={{ transform: `rotate(${robotHeading}deg)` }}
+            >
+              {/* wheel shadows */}
+              <ellipse cx="-12" cy="-1" rx="2.8" ry="6.5" fill="hsl(210, 10%, 24%, 0.55)" />
+              <ellipse cx="12" cy="-1" rx="2.8" ry="6.5" fill="hsl(210, 10%, 24%, 0.55)" />
+
+              {/* body */}
+              <rect
+                x="-12"
+                y="-9"
+                width="24"
+                height="18"
+                rx="8"
+                fill="hsl(168, 76%, 42%)"
+                stroke="hsl(0, 0%, 100%)"
+                strokeWidth="2"
+              />
+
+              {/* top panel */}
+              <rect
+                x="-8"
+                y="-5.5"
+                width="16"
+                height="9"
+                rx="4"
+                fill="hsl(177, 50%, 22%)"
+                stroke="hsl(177, 35%, 70%, 0.7)"
+                strokeWidth="0.8"
+              />
+
+              {/* eyes / sensors */}
+              <circle cx="-3.5" cy="-1.3" r="1.25" fill="hsl(190, 95%, 80%)" />
+              <circle cx="3.5" cy="-1.3" r="1.25" fill="hsl(190, 95%, 80%)" />
+              <circle cx="-3.5" cy="-1.3" r="0.5" fill="hsl(198, 95%, 95%)" />
+              <circle cx="3.5" cy="-1.3" r="0.5" fill="hsl(198, 95%, 95%)" />
+
+              {/* smile indicator */}
+              <path
+                d="M -4 2 Q 0 4 4 2"
+                stroke="hsl(175, 35%, 90%)"
+                strokeWidth="0.9"
+                fill="none"
+                strokeLinecap="round"
+              />
+
+              {/* front light beam while cleaning */}
+              {isCleaning && (
+                <path
+                  d="M 12 -4 L 20 0 L 12 4"
+                  fill="hsl(55, 100%, 75%, 0.4)"
+                  stroke="hsl(55, 90%, 70%, 0.6)"
+                  strokeWidth="0.5"
+                />
+              )}
+
+              {/* low battery alert light */}
+              {robotStatus === "returning" && (
+                <circle cx="0" cy="-7" r="1.3" fill="hsl(0, 85%, 60%)" className="animate-pulse" />
+              )}
+            </g>
           </g>
         </svg>
       </div>
@@ -521,6 +619,16 @@ export function FloorPlanMap({
           isCleaning ? "text-primary" : "text-muted-foreground"
         )}>
           {cleaningProgress}% covered
+        </span>
+      </div>
+      <div className="mt-2 text-xs text-muted-foreground">
+        Tracking source:{" "}
+        <span className="font-medium text-foreground">
+          {telemetrySource === "live"
+            ? "Live Robot Telemetry"
+            : telemetrySource === "script"
+              ? "Script Sync Demo"
+              : "Simulation"}
         </span>
       </div>
     </div>

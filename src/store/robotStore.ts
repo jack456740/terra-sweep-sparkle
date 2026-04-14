@@ -14,11 +14,14 @@ export const useRobotStore = create<RobotStore>()(
       batteryLevel: config.battery.initialPercentage,
       currentLocation: LOCATIONS.HOME_BASE,
       cleaningProgress: config.cleaning.initialProgress,
+      telemetrySource: "simulation",
+      pose: null,
+      lastTelemetryAt: null,
 
       deployRobot: () => {
         set({ deployState: DEPLOY_STATE.DEPLOYING, cleaningProgress: config.cleaning.initialProgress });
         setTimeout(() => {
-          set({ deployState: DEPLOY_STATE.DEPLOYED, robotStatus: ROBOT_STATUS.CLEANING, currentLocation: LOCATIONS.ZONE_A_NORTH });
+          set({ deployState: DEPLOY_STATE.DEPLOYED, robotStatus: ROBOT_STATUS.CLEANING, currentLocation: LOCATIONS.MAIN_AREA });
         }, config.timing.deployTimeoutMs);
       },
 
@@ -30,6 +33,7 @@ export const useRobotStore = create<RobotStore>()(
       },
 
       updateStatus: (patch) => set(patch),
+      setTelemetrySource: (source) => set({ telemetrySource: source }),
     }),
     {
       name: 'robot-store',

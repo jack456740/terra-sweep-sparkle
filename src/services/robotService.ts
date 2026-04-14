@@ -2,6 +2,7 @@ import { apiClient, type ApiClientError } from "@/lib/api/client";
 import { getApiEnvironmentConfig } from "@/lib/config";
 import { retryWithBackoff } from "@/lib/retry";
 import type { DeployState, RobotStatus } from "@/lib/constants";
+import type { RobotPose, TelemetrySource } from "@/store/types";
 
 export type RobotStatusResponse = {
   robotStatus: RobotStatus;
@@ -9,6 +10,8 @@ export type RobotStatusResponse = {
   batteryLevel: number;
   currentLocation: string;
   cleaningProgress: number;
+  telemetrySource?: TelemetrySource;
+  pose?: RobotPose | null;
   updatedAt?: string;
 };
 
