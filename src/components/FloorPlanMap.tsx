@@ -87,7 +87,7 @@ function avoidObstacles(pos: { x: number; y: number }, zoneIndex: number): { x: 
 }
 
 /** Get trash items for a given zone order */
-function getZoneTrash(zoneOrder: number) {
+function getZoneTrash(zoneOrder: number): typeof TRASH_ITEMS {
   return TRASH_ITEMS.filter((t) => t.zoneOrder === zoneOrder);
 }
 
