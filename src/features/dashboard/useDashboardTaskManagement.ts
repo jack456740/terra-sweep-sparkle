@@ -8,9 +8,14 @@ interface UseDashboardTaskManagementParams {
   updateStatus: (patch: Partial<RobotState>) => void;
 }
 
+interface DashboardTaskManagement {
+  handleDeploy: () => Promise<void>;
+  handleStop: () => Promise<void>;
+}
+
 export function useDashboardTaskManagement({
   updateStatus,
-}: UseDashboardTaskManagementParams) {
+}: UseDashboardTaskManagementParams): DashboardTaskManagement {
   const handleDeploy = useCallback(async () => {
     toast.info("Initializing robot systems...");
     updateStatus({

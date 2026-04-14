@@ -13,19 +13,19 @@ interface BatteryIndicatorProps {
  * @returns The rendered Battery Indicator component.
  */
 export function BatteryIndicator({ percentage, isCharging = false }: BatteryIndicatorProps): JSX.Element {
-  const getBatteryColor = () => {
+  const getBatteryColor = (): string => {
     if (percentage <= 20) return "bg-destructive";
     if (percentage <= 50) return "bg-warning";
     return "bg-success";
   };
 
-  const getBatteryTextColor = () => {
+  const getBatteryTextColor = (): string => {
     if (percentage <= 20) return "text-destructive";
     if (percentage <= 50) return "text-warning";
     return "text-success";
   };
 
-  const getBatteryIcon = () => {
+  const getBatteryIcon = (): typeof BatteryCharging => {
     if (isCharging) return BatteryCharging;
     if (percentage <= 20) return BatteryLow;
     if (percentage <= 50) return BatteryMedium;

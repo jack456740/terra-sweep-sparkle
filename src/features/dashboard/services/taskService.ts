@@ -12,7 +12,7 @@ function startTimedTask({
   successDelayMs,
   startMessage,
   successMessage,
-}: StartTaskParams) {
+}: StartTaskParams): void {
   toast.info(startMessage);
   execute();
   setTimeout(() => toast.success(successMessage), successDelayMs);

@@ -7,7 +7,7 @@ import { getRobotSimulationStep } from '@/features/robot/robotSimulationStep';
 
 const config = getConfig();
 
-export function useRobotSimulation() {
+export function useRobotSimulation(): void {
   const { robotStatus, batteryLevel, cleaningProgress, updateStatus } = useRobotStore();
   const batteryLevelRef = useRef<number>(batteryLevel);
   const cleaningProgressRef = useRef<number>(cleaningProgress);
