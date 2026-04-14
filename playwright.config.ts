@@ -18,7 +18,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: process.env.CI ? 'npm run build && npm run preview' : 'npm run dev',
+    command: process.env.CI ? 'vite build && npm run preview' : 'npm run dev',
     url: process.env.CI ? 'http://localhost:4173' : 'http://localhost:8080',
     reuseExistingServer: !process.env.CI,
   },
