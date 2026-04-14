@@ -11,8 +11,9 @@ interface DeployButtonProps {
 
 /**
  * Deploy Button component.
- *  * 
- *  * @param props - The component props.
+ * @see SR-AUTO-01 - Autonomous operation scheduling/deployment control
+ * @see SR-PWR-01 - Return workflow initiation from dashboard control
+ * @param props - The component props.
  * @returns The rendered Deploy Button component.
  */
 export function DeployButton({ state, onDeploy, onStop, disabled = false }: DeployButtonProps): JSX.Element {

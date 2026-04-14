@@ -9,8 +9,8 @@ interface CleaningProgressProps {
 
 /**
  * Cleaning Progress component.
- *  * 
- *  * @param props - The component props.
+ * @see SR-UI-01 - Cleanup completion and progress feedback
+ * @param props - The component props.
  * @returns The rendered Cleaning Progress component.
  */
 export function CleaningProgress({ progress, isActive, totalArea = 500 }: CleaningProgressProps): JSX.Element {

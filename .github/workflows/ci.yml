@@ -26,6 +26,9 @@ jobs:
     - name: Run Unit and Integration Tests (Vitest)
       run: npm run test:run
 
+    - name: Generate Coverage Report (Vitest)
+      run: npm run test:coverage
+
     - name: Install Playwright Browsers
       run: npx playwright install chromium --with-deps
 

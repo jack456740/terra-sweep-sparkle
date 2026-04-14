@@ -49,8 +49,9 @@ const statusConfig: Record<RobotStatus, StatusConfig> = {
 
 /**
  * Robot Status Card component.
- *  * 
- *  * @param props - The component props.
+ * @see SR-UI-01 - Status notifications and user-facing operational state
+ * @see SR-UI-02 - Real-time status/location visibility
+ * @param props - The component props.
  * @returns The rendered Robot Status Card component.
  */
 export function RobotStatusCard({ status, location = LOCATIONS.HOME_BASE }: RobotStatusCardProps): JSX.Element {

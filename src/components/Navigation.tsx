@@ -20,6 +20,7 @@ interface NavigationProps {
 
 /**
  * Navigation component.
+ * Dashboard-first tab navigation with optional informational sections.
  * @returns The rendered Navigation component.
  */
 export function Navigation({ activeTab, onTabChange }: NavigationProps): JSX.Element {

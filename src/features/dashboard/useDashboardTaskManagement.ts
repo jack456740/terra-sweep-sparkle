@@ -16,6 +16,7 @@ interface DashboardTaskManagement {
 export function useDashboardTaskManagement({
   updateStatus,
 }: UseDashboardTaskManagementParams): DashboardTaskManagement {
+  // Control actions align with SR-UI-01/SR-PWR-01 behavior for deploy-return lifecycle.
   const handleDeploy = useCallback(async () => {
     toast.info("Initializing robot systems...");
     updateStatus({

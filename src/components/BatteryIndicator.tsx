@@ -8,8 +8,8 @@ interface BatteryIndicatorProps {
 
 /**
  * Battery Indicator component.
- *  * 
- *  * @param props - The component props.
+ * @see SR-PWR-01 - Low-power awareness and return-to-base readiness
+ * @param props - The component props.
  * @returns The rendered Battery Indicator component.
  */
 export function BatteryIndicator({ percentage, isCharging = false }: BatteryIndicatorProps): JSX.Element {

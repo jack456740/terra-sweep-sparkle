@@ -9,6 +9,8 @@ import { useDashboardController } from "@/features/dashboard/useDashboardControl
 
 /**
  * Dashboard Section component.
+ * @see SR-UI-01 - Cleanup status notifications via web interface
+ * @see SR-UI-02 - Real-time operational data monitoring
  * @returns The rendered Dashboard Section component.
  */
 export function DashboardSection(): JSX.Element {
