@@ -1,484 +1,347 @@
 #!/usr/bin/env python3
 """
-Mission Sync Driver for TurtleBot 4 — with obstacle avoidance & trash detection.
+TrashBot — modified FollowBot that drives toward detected trash objects
+instead of following people.
 
-Reads the shared mission timeline JSON and drives the robot through keyframes
-using /cmd_vel.  Layers on:
-  1. LIDAR-based obstacle avoidance  (chairs, tables, walls, people)
-  2. YOLOv8 camera-based trash detection  (bottles, cups, wrappers, cans …)
+Based on Clearpath Robotics' FollowBot example.
+Uses the OAK-D onboard MobileNet-SSD (runs on the camera's neural accelerator,
+not the Pi CPU) so no extra pip installs needed.
 
-Requires:
-    pip install ultralytics opencv-python-headless "numpy<2"
-    (plus the standard ros-humble-* turtlebot4 stack)
+MobileNet-SSD VOC class IDs:
+    0  background      5  bottle        10 cow           15 person
+    1  aeroplane       6  bus           11 diningtable   16 pottedplant
+    2  bicycle         7  car           12 dog           17 sheep
+    3  bird            8  cat           13 horse         18 sofa
+    4  boat            9  chair         14 motorbike     19 train
+                                                         20 tvmonitor
 """
 
-import argparse
-import json
 import math
 import threading
 import time
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from enum import Enum
+from typing import List, Tuple
 
-import cv2
-import numpy as np
 import rclpy
-from cv_bridge import CvBridge
+from rclpy.action import ActionClient
+from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data, qos_profile_system_default
+
+from depthai_ros_msgs.msg import SpatialDetectionArray
+from turtlebot4_msgs.msg import UserLed
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
-from rclpy.executors import MultiThreadedExecutor
-from rclpy.node import Node
-from sensor_msgs.msg import Image, LaserScan
-from ultralytics import YOLO
 
-# ─── helpers ────────────────────────────────────────────────────────────────
+from irobot_create_msgs.action import Undock
+from irobot_create_msgs.msg import Dock
 
 
-def normalize_angle(angle: float) -> float:
-    return math.atan2(math.sin(angle), math.cos(angle))
+# ─── target classes ─────────────────────────────────────────────────────────
+# MobileNet-SSD VOC class IDs to treat as trash.
+# Bottle is the main one.  Add '9' (chair) etc. if you want to test on
+# bigger objects, but remove it before a real run or the robot will
+# charge at your furniture.
+TARGET_CLASS_IDS = {'5'}   # {'5', '16'} to add potted-plant, etc.
+
+TARGET_LABELS = {
+    '5': 'bottle',
+}
 
 
-def normalize_angle_array(angles: np.ndarray) -> np.ndarray:
-    """Vectorized version for use on LaserScan angle arrays."""
-    return np.arctan2(np.sin(angles), np.cos(angles))
+class State(Enum):
+    SEARCHING = 0
+    APPROACHING = 1
+    ARRIVED = 2
 
 
-def yaw_from_quaternion(x: float, y: float, z: float, w: float) -> float:
+class Direction(Enum):
+    FORWARD = 0
+    FORWARD_LEFT = 1
+    FORWARD_RIGHT = 2
+    LEFT = 3
+    RIGHT = 4
+    UNKNOWN = 5
+
+
+def yaw_from_quaternion(x, y, z, w):
     siny_cosp = 2.0 * (w * z + x * y)
     cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
     return math.atan2(siny_cosp, cosy_cosp)
 
 
-# COCO class IDs that count as "trash" — extend as needed
-TRASH_CLASS_IDS: set = {
-    39,  # bottle
-    41,  # cup
-    46,  # banana (peel)
-}
-TRASH_LABELS: Dict[int, str] = {
-    39: "bottle",
-    41: "cup",
-    46: "banana",
-}
+class TrashBot(Node):
+    image_width = 300
+    image_height = 300
+    fps = 15
+    confidence = 0.55          # lower than person-following (trash is harder)
 
+    is_docked = False
 
-# ─── node ───────────────────────────────────────────────────────────────────
+    target = None
+    target_direction = Direction.UNKNOWN
+    target_distance = 0.0
+    last_target_direction = Direction.UNKNOWN
+    state = State.SEARCHING
 
+    forward_margin_px = 25
+    forward_turn_margin_px = 80
 
-class MissionSyncDriver(Node):
-    """Drive through mission keyframes while avoiding obstacles and spotting trash."""
+    # ── distance thresholds (meters) ────────────────────────────────────
+    arrive_thresh = 0.45       # close enough — "found it"
+    approach_thresh = 0.60     # start approaching when farther than this
+    thresh_hysteresis = 0.05
 
-    def __init__(
-        self,
-        mission_file: Path,
-        map_width_m: float,
-        map_height_m: float,
-        yolo_model: str,
-        detection_conf: float,
-        obstacle_front_m: float,
-        obstacle_side_m: float,
-        camera_topic: str,
-    ) -> None:
-        super().__init__("mission_sync_driver")
+    def __init__(self):
+        super().__init__('trashbot')
 
-        # ── mission ──────────────────────────────────────────────────────
-        self.mission = self._load_mission(mission_file)
-        self.keyframes = self.mission["keyframes"]
-        self.duration_sec = float(self.mission["durationSec"])
-        self.map_width_m = map_width_m
-        self.map_height_m = map_height_m
+        # ── subs / pubs ─────────────────────────────────────────────────
+        self.create_subscription(
+            SpatialDetectionArray,
+            '/color/mobilenet_spatial_detections',
+            self._on_detection,
+            qos_profile_sensor_data,
+        )
+        self.create_subscription(Dock, '/dock', self._on_dock, qos_profile_sensor_data)
+        self.create_subscription(Odometry, '/odom', self._on_odom, 20)
 
-        # ── motion tuning ────────────────────────────────────────────────
-        self.max_linear = 0.24
-        self.max_angular = 1.1
-        self.goal_tolerance_m = 0.09
-        self.heading_tolerance_rad = 0.18
+        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', qos_profile_system_default)
+        self.user_led_pub = self.create_publisher(UserLed, '/hmi/led', qos_profile_sensor_data)
+        self.undock_action_client = ActionClient(self, Undock, '/undock')
 
-        # ── obstacle avoidance ───────────────────────────────────────────
-        self.obstacle_front_m = obstacle_front_m
-        self.obstacle_side_m = obstacle_side_m
-        self.front_arc_deg = 60.0
-        self.side_arc_deg = 90.0
-        self.latest_scan: Optional[LaserScan] = None
-
-        # Fix #5: hysteresis — commit to a steer direction until front clears
-        self.committed_steer: Optional[str] = None  # "steer_left" | "steer_right" | None
-        self.steer_clear_front_m = obstacle_front_m * 1.4  # need extra clearance to release
-
-        # Fix #1: manual log throttle
-        self._last_block_log = 0.0
-
-        # ── trash detection ──────────────────────────────────────────────
-        self.yolo = YOLO(yolo_model)
-        self.detection_conf = detection_conf
-        self.bridge = CvBridge()
-        self.detect_interval_sec = 1.0
-        self.pause_after_detect_sec = 2.0
-        self.pause_until: Optional[float] = None
-        self.detections_log: List[Dict[str, Any]] = []
-        self._detections_dumped = False
-
-        # Fix #8: run YOLO in a background worker thread, not in the callback.
-        # The callback just hands off the latest frame; the worker picks it up.
-        self._frame_lock = threading.Lock()
-        self._latest_frame: Optional[np.ndarray] = None
-        self._frame_stamp: float = 0.0
-        self._last_processed_stamp: float = 0.0
-        self._worker_stop = threading.Event()
-        self._worker = threading.Thread(target=self._yolo_worker, daemon=True)
-
-        # ── pose ─────────────────────────────────────────────────────────
+        # ── pose (for logging where trash was found) ────────────────────
         self.pose_x = 0.0
         self.pose_y = 0.0
         self.pose_yaw = 0.0
-        self.have_odom = False
-        self.started_at = self.get_clock().now()
 
-        # ── ROS wiring ──────────────────────────────────────────────────
-        # Fix #8: put the image sub in its own callback group so a slow
-        # imgmsg_to_cv2 call can't block /scan or /odom under a
-        # MultiThreadedExecutor.
-        sensor_group = MutuallyExclusiveCallbackGroup()
-        image_group = MutuallyExclusiveCallbackGroup()
-        timer_group = MutuallyExclusiveCallbackGroup()
-
-        self.cmd_pub = self.create_publisher(Twist, "/cmd_vel", 10)
-        self.create_subscription(
-            Odometry, "/odom", self._on_odom, 20, callback_group=sensor_group
-        )
-        self.create_subscription(
-            LaserScan, "/scan", self._on_scan, 10, callback_group=sensor_group
-        )
-        self.create_subscription(
-            Image, camera_topic, self._on_image, 5, callback_group=image_group
-        )
-        self.timer = self.create_timer(
-            0.1, self._tick, callback_group=timer_group
-        )
-
-        self._worker.start()
+        # ── dedup ───────────────────────────────────────────────────────
+        self.known_trash: List[Tuple[float, float, str]] = []
+        self.dedup_radius_m = 0.5
+        self.found_log: list = []
 
         self.get_logger().info(
-            f"Mission '{self.mission['name']}' loaded "
-            f"({self.duration_sec:.1f}s, {len(self.keyframes)} keyframes). "
-            f"YOLO model: {yolo_model}, obstacle front: {obstacle_front_m}m"
+            f"TrashBot ready — targeting classes {TARGET_CLASS_IDS}"
         )
-
-    # ── mission file ────────────────────────────────────────────────────
-
-    def _load_mission(self, path: Path) -> Dict[str, Any]:
-        with path.open("r", encoding="utf-8") as f:
-            mission = json.load(f)
-        if "keyframes" not in mission or len(mission["keyframes"]) < 2:
-            raise ValueError("Mission must include at least 2 keyframes.")
-        return mission
 
     # ── callbacks ───────────────────────────────────────────────────────
 
-    def _on_odom(self, msg: Odometry) -> None:
+    def _on_dock(self, msg: Dock):
+        self.is_docked = msg.is_docked
+
+    def _on_odom(self, msg: Odometry):
         self.pose_x = msg.pose.pose.position.x
         self.pose_y = msg.pose.pose.position.y
         q = msg.pose.pose.orientation
         self.pose_yaw = yaw_from_quaternion(q.x, q.y, q.z, q.w)
-        self.have_odom = True
 
-    def _on_scan(self, msg: LaserScan) -> None:
-        self.latest_scan = msg
+    def _on_detection(self, msg: SpatialDetectionArray):
+        """Pick the closest trash object from the spatial detections."""
+        closest_dist = float('inf')
+        target = None
+        target_cls = None
 
-    def _on_image(self, msg: Image) -> None:
-        """Fast path: just stash the frame. Worker thread does the heavy lifting."""
-        try:
-            frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
-        except Exception as e:
-            self.get_logger().warn(f"cv_bridge error: {e}")
+        for detection in msg.detections:
+            cls_id = detection.results[0].class_id
+            score = detection.results[0].score
+            if cls_id not in TARGET_CLASS_IDS or score < self.confidence:
+                continue
+
+            dist = detection.position.z
+            if dist < closest_dist:
+                closest_dist = dist
+                target = detection
+                target_cls = cls_id
+
+        if target is not None:
+            self.target_distance = target.position.z
+        self.target = target
+        self._set_target_direction()
+
+    # ── direction logic (same idea as FollowBot) ────────────────────────
+
+    def _set_target_direction(self):
+        if self.target is None:
+            self.target_direction = Direction.UNKNOWN
             return
 
-        with self._frame_lock:
-            self._latest_frame = frame
-            self._frame_stamp = time.monotonic()
+        if self.target_direction is not Direction.UNKNOWN:
+            self.last_target_direction = self.target_direction
 
-    # ── YOLO worker thread (fix #8) ─────────────────────────────────────
+        center_dist = self.target.bbox.center.x - self.image_width / 2
 
-    def _yolo_worker(self) -> None:
-        """Pull the latest frame and run inference at the throttled rate."""
-        while not self._worker_stop.is_set():
-            with self._frame_lock:
-                frame = self._latest_frame
-                stamp = self._frame_stamp
-
-            # No new frame, or we've already processed this one, or throttle not elapsed
-            if (
-                frame is None
-                or stamp == self._last_processed_stamp
-                or (time.monotonic() - self._last_processed_stamp) < self.detect_interval_sec
-            ):
-                time.sleep(0.05)
-                continue
-
-            self._last_processed_stamp = stamp
-
-            try:
-                results = self.yolo(frame, conf=self.detection_conf, verbose=False)
-            except Exception as e:
-                self.get_logger().warn(f"YOLO inference error: {e}")
-                continue
-
-            if not results or results[0].boxes is None:
-                continue
-
-            found_any = False
-            for box in results[0].boxes:
-                cls_id = int(box.cls[0])
-                if cls_id not in TRASH_CLASS_IDS:
-                    continue
-
-                conf = float(box.conf[0])
-                label = TRASH_LABELS.get(cls_id, f"class_{cls_id}")
-                x1, y1, x2, y2 = box.xyxy[0].tolist()
-
-                detection = {
-                    "label": label,
-                    "confidence": round(conf, 3),
-                    "bbox": [round(v, 1) for v in (x1, y1, x2, y2)],
-                    "robot_x": round(self.pose_x, 3),
-                    "robot_y": round(self.pose_y, 3),
-                    "timestamp": self._mission_elapsed(),
-                }
-                self.detections_log.append(detection)
-                self.get_logger().info(
-                    f"TRASH DETECTED: {label} ({conf:.0%}) @ robot pos "
-                    f"({self.pose_x:.2f}, {self.pose_y:.2f})"
-                )
-                found_any = True
-
-            if found_any:
-                self.pause_until = time.monotonic() + self.pause_after_detect_sec
-
-    # ── obstacle avoidance (fixes #2 + #5) ──────────────────────────────
-
-    def _evaluate_obstacles(self) -> str:
-        """
-        Partition the LIDAR scan into a front arc and side arcs.
-        Returns one of: 'clear', 'steer_left', 'steer_right', 'blocked'.
-
-        Fix #2: use vectorized normalize_angle_array instead of scalar math.atan2.
-        Fix #5: once committed to a steer direction, hold it until the front is
-        clearly open, to prevent left/right oscillation at the arc edge.
-        """
-        scan = self.latest_scan
-        if scan is None:
-            return "clear"
-
-        ranges = np.asarray(scan.ranges, dtype=np.float32)
-        n = ranges.size
-        if n == 0:
-            return "clear"
-
-        angles = np.linspace(scan.angle_min, scan.angle_max, n, dtype=np.float32)
-        ranges = np.where(np.isfinite(ranges), ranges, 100.0)
-
-        front_half = math.radians(self.front_arc_deg / 2.0)
-        side_half = math.radians(self.side_arc_deg / 2.0)
-
-        norm_angles = normalize_angle_array(angles)
-        front_mask = np.abs(norm_angles) < front_half
-        left_mask = (norm_angles >= front_half) & (norm_angles < side_half)
-        right_mask = (norm_angles <= -front_half) & (norm_angles > -side_half)
-
-        front_min = float(np.min(ranges[front_mask])) if np.any(front_mask) else 100.0
-        left_min = float(np.min(ranges[left_mask])) if np.any(left_mask) else 100.0
-        right_min = float(np.min(ranges[right_mask])) if np.any(right_mask) else 100.0
-
-        # Hysteresis: if we're already committed to a turn, only release it
-        # once the front is open past a higher threshold.
-        if self.committed_steer is not None:
-            if front_min > self.steer_clear_front_m:
-                self.committed_steer = None
-                return "clear"
-            return self.committed_steer
-
-        if front_min > self.obstacle_front_m:
-            return "clear"
-
-        # Front blocked — pick a direction and commit.
-        if left_min > self.obstacle_side_m and right_min > self.obstacle_side_m:
-            choice = "steer_left" if left_min >= right_min else "steer_right"
-        elif left_min > self.obstacle_side_m:
-            choice = "steer_left"
-        elif right_min > self.obstacle_side_m:
-            choice = "steer_right"
+        if abs(center_dist) < self.forward_margin_px:
+            self.target_direction = Direction.FORWARD
+        elif abs(center_dist) < self.forward_turn_margin_px:
+            self.target_direction = (
+                Direction.FORWARD_RIGHT if center_dist >= 0 else Direction.FORWARD_LEFT
+            )
         else:
-            return "blocked"
+            self.target_direction = (
+                Direction.RIGHT if center_dist >= 0 else Direction.LEFT
+            )
 
-        self.committed_steer = choice
-        return choice
+    # ── LED helpers ─────────────────────────────────────────────────────
 
-    # ── mission interpolation ───────────────────────────────────────────
+    def _set_led(self, led, color, period, duty):
+        msg = UserLed()
+        msg.led = led
+        msg.color = color
+        msg.blink_period = period
+        msg.duty_cycle = duty
+        self.user_led_pub.publish(msg)
 
-    def _mission_elapsed(self) -> float:
-        now = self.get_clock().now()
-        return (now - self.started_at).nanoseconds / 1e9
+    def _drive(self, linear_x, angular_z):
+        msg = Twist()
+        msg.linear.x = linear_x
+        msg.angular.z = angular_z
+        self.cmd_vel_pub.publish(msg)
 
-    def _to_meters(self, kf: Dict[str, Any]) -> Tuple[float, float]:
-        return (
-            float(kf["x"]) * self.map_width_m,
-            float(kf["y"]) * self.map_height_m,
-        )
+    def undock(self):
+        self.undock_action_client.wait_for_server()
+        result = self.undock_action_client.send_goal(Undock.Goal())
+        if result.result.is_docked:
+            print('Undocking failed')
 
-    def _target_for_time(self, elapsed_sec: float) -> Tuple[float, float]:
-        if elapsed_sec >= self.duration_sec:
-            return self._to_meters(self.keyframes[-1])
+    # ── dedup ───────────────────────────────────────────────────────────
 
-        next_idx = next(
-            (i for i, kf in enumerate(self.keyframes) if float(kf["tSec"]) > elapsed_sec),
-            1,
-        )
-        prev_kf = self.keyframes[next_idx - 1]
-        next_kf = self.keyframes[next_idx]
-        t0 = float(prev_kf["tSec"])
-        t1 = float(next_kf["tSec"])
-        ratio = 0.0 if t1 <= t0 else max(0.0, min(1.0, (elapsed_sec - t0) / (t1 - t0)))
+    def _is_known(self, label: str) -> bool:
+        for kx, ky, klabel in self.known_trash:
+            if klabel == label and math.hypot(self.pose_x - kx, self.pose_y - ky) < self.dedup_radius_m:
+                return True
+        return False
 
-        x0, y0 = self._to_meters(prev_kf)
-        x1, y1 = self._to_meters(next_kf)
-        return (x0 + (x1 - x0) * ratio, y0 + (y1 - y0) * ratio)
-
-    # ── main control loop ───────────────────────────────────────────────
-
-    def _tick(self) -> None:
-        if not self.have_odom:
-            return
-
-        if self.pause_until is not None:
-            if time.monotonic() < self.pause_until:
-                self.cmd_pub.publish(Twist())
-                return
-            self.pause_until = None
-
-        elapsed = self._mission_elapsed()
-        target_x, target_y = self._target_for_time(elapsed)
-        dx = target_x - self.pose_x
-        dy = target_y - self.pose_y
-        dist = math.hypot(dx, dy)
-
-        if elapsed >= self.duration_sec and dist < self.goal_tolerance_m:
-            self.cmd_pub.publish(Twist())
-            self.get_logger().info("Mission complete.")
-            # Let main's finally{} handle shutdown + dump cleanly
-            self._worker_stop.set()
-            rclpy.shutdown()
-            return
-
-        obstacle_state = self._evaluate_obstacles()
-        cmd = Twist()
-
-        if obstacle_state == "blocked":
-            self.cmd_pub.publish(Twist())
-            # Fix #1: manual throttle
-            now = time.monotonic()
-            if now - self._last_block_log > 2.0:
-                self.get_logger().info("Path blocked — waiting…")
-                self._last_block_log = now
-            return
-
-        if obstacle_state.startswith("steer_"):
-            direction = 1.0 if obstacle_state == "steer_left" else -1.0
-            cmd.angular.z = direction * 0.6 * self.max_angular
-            self.cmd_pub.publish(cmd)
-            return
-
-        desired_yaw = math.atan2(dy, dx)
-        yaw_error = normalize_angle(desired_yaw - self.pose_yaw)
-
-        if abs(yaw_error) > self.heading_tolerance_rad:
-            cmd.angular.z = max(-self.max_angular, min(self.max_angular, 1.9 * yaw_error))
-        else:
-            cmd.linear.x = max(0.0, min(self.max_linear, 0.8 * dist))
-            cmd.angular.z = max(-self.max_angular, min(self.max_angular, 1.4 * yaw_error))
-
-        self.cmd_pub.publish(cmd)
-
-    # ── output ──────────────────────────────────────────────────────────
-
-    def _dump_detections(self) -> None:
-        if self._detections_dumped:
-            return
-        self._detections_dumped = True
-
-        if not self.detections_log:
-            self.get_logger().info("No trash detected during mission.")
-            return
-
-        out_path = Path("detections.json")
-        with out_path.open("w", encoding="utf-8") as f:
-            json.dump(self.detections_log, f, indent=2)
+    def _log_trash(self, label: str):
+        self.known_trash.append((self.pose_x, self.pose_y, label))
+        entry = {
+            'label': label,
+            'robot_x': round(self.pose_x, 3),
+            'robot_y': round(self.pose_y, 3),
+            'distance_m': round(self.target_distance, 3),
+        }
+        self.found_log.append(entry)
         self.get_logger().info(
-            f"Wrote {len(self.detections_log)} detection(s) → {out_path.resolve()}"
+            f"TRASH FOUND: {label} @ ({self.pose_x:.2f}, {self.pose_y:.2f}), "
+            f"depth {self.target_distance:.2f}m"
         )
 
-    def stop_worker(self) -> None:
-        self._worker_stop.set()
-        if self._worker.is_alive():
-            self._worker.join(timeout=2.0)
+    # ── state machine ───────────────────────────────────────────────────
+
+    def state_machine(self):
+
+        # ── SEARCHING ───────────────────────────────────────────────
+        if self.state == State.SEARCHING:
+            if self.target_direction == Direction.UNKNOWN:
+                # Spin slowly looking for trash
+                if self.last_target_direction in (
+                    Direction.UNKNOWN, Direction.RIGHT,
+                    Direction.FORWARD_RIGHT, Direction.FORWARD,
+                ):
+                    self._drive(0.0, -0.5)
+                    self._set_led(0, 1, 500, 0.5)
+                    self._set_led(1, 0, 500, 0.5)
+                else:
+                    self._drive(0.0, 0.5)
+                    self._set_led(0, 0, 500, 0.5)
+                    self._set_led(1, 1, 500, 0.5)
+            else:
+                if self.target_distance < self.arrive_thresh:
+                    self.state = State.ARRIVED
+                else:
+                    self.state = State.APPROACHING
+
+        # ── APPROACHING ─────────────────────────────────────────────
+        elif self.state == State.APPROACHING:
+            if self.target_direction == Direction.UNKNOWN:
+                self.state = State.SEARCHING
+            elif self.target_distance < self.arrive_thresh - self.thresh_hysteresis:
+                self.state = State.ARRIVED
+            else:
+                # Drive toward the object
+                if self.target_direction == Direction.FORWARD:
+                    self._drive(0.2, 0.0)
+                    self._set_led(0, 1, 1000, 1.0)
+                    self._set_led(1, 1, 1000, 1.0)
+                elif self.target_direction == Direction.FORWARD_LEFT:
+                    self._drive(0.15, 0.2)
+                    self._set_led(0, 1, 1000, 1.0)
+                    self._set_led(1, 1, 1000, 0.5)
+                elif self.target_direction == Direction.FORWARD_RIGHT:
+                    self._drive(0.15, -0.2)
+                    self._set_led(0, 1, 1000, 0.5)
+                    self._set_led(1, 1, 1000, 1.0)
+                elif self.target_direction == Direction.LEFT:
+                    self._drive(0.0, 0.3)
+                    self._set_led(0, 0, 1000, 0.5)
+                    self._set_led(1, 1, 1000, 0.5)
+                else:  # RIGHT
+                    self._drive(0.0, -0.3)
+                    self._set_led(0, 1, 1000, 0.5)
+                    self._set_led(1, 0, 1000, 0.5)
+
+        # ── ARRIVED ─────────────────────────────────────────────────
+        elif self.state == State.ARRIVED:
+            self._drive(0.0, 0.0)
+
+            # Figure out which class we reached
+            if self.target is not None:
+                cls_id = self.target.results[0].class_id
+                label = TARGET_LABELS.get(cls_id, f'class_{cls_id}')
+
+                if not self._is_known(label):
+                    self._log_trash(label)
+                    # Flash green to signal found
+                    self._set_led(0, 2, 250, 1.0)
+                    self._set_led(1, 2, 250, 1.0)
+                    # Pause so dashboard / human can see
+                    time.sleep(3.0)
+
+            # Done with this one — go look for more
+            self.target = None
+            self.target_direction = Direction.UNKNOWN
+            self.state = State.SEARCHING
+
+    # ── main loop ───────────────────────────────────────────────────────
+
+    def run(self):
+        if self.is_docked:
+            print('Undocking')
+            self.undock()
+
+        while True:
+            self.state_machine()
+            state_label = f'{self.state}'
+            if self.target is not None:
+                state_label += f'  d={self.target_distance:.2f}m'
+            print(f'{state_label: <40}', end='\r')
+            time.sleep(1 / self.fps)
 
 
-# ─── CLI ────────────────────────────────────────────────────────────────────
+def main(args=None):
+    rclpy.init(args=args)
+    node = TrashBot()
 
+    thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
+    thread.start()
 
-def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(
-        description="TurtleBot 4 mission driver with obstacle avoidance & trash detection."
-    )
-    p.add_argument("--mission", default="demo-mission.json")
-    p.add_argument("--map-width-m", type=float, default=4.2)
-    p.add_argument("--map-height-m", type=float, default=3.0)
-    p.add_argument("--yolo-model", default="yolov8n.pt")
-    p.add_argument("--detection-conf", type=float, default=0.45)
-    p.add_argument("--obstacle-front-m", type=float, default=0.45)
-    p.add_argument("--obstacle-side-m", type=float, default=0.30)
-    p.add_argument("--camera-topic", default="/oakd/rgb/preview/image_raw")
-    return p.parse_args()
-
-
-def main() -> None:
-    args = parse_args()
-    mission_path = Path(args.mission).expanduser().resolve()
-    if not mission_path.exists():
-        raise FileNotFoundError(f"Mission file not found: {mission_path}")
-
-    rclpy.init()
-    node = MissionSyncDriver(
-        mission_file=mission_path,
-        map_width_m=args.map_width_m,
-        map_height_m=args.map_height_m,
-        yolo_model=args.yolo_model,
-        detection_conf=args.detection_conf,
-        obstacle_front_m=args.obstacle_front_m,
-        obstacle_side_m=args.obstacle_side_m,
-        camera_topic=args.camera_topic,
-    )
-
-    # Fix #8: use a MultiThreadedExecutor so the image callback can run
-    # concurrently with /scan, /odom, and the control timer.
-    executor = MultiThreadedExecutor(num_threads=4)
-    executor.add_node(node)
+    time.sleep(5)
+    print('Running TrashBot...\n')
 
     try:
-        executor.spin()
+        node.run()
     except KeyboardInterrupt:
         pass
-    finally:
-        try:
-            node.cmd_pub.publish(Twist())
-        except Exception:
-            pass
-        node.stop_worker()
-        node._dump_detections()
-        node.destroy_node()
-        if rclpy.ok():
-            rclpy.shutdown()
+
+    if node.found_log:
+        import json
+        from pathlib import Path
+        out = Path('trash_found.json')
+        with out.open('w') as f:
+            json.dump(node.found_log, f, indent=2)
+        print(f'\nWrote {len(node.found_log)} find(s) → {out.resolve()}')
+
+    node.destroy_node()
+    rclpy.shutdown()
+    thread.join()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
