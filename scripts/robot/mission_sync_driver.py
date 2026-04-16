@@ -8,13 +8,14 @@ using /cmd_vel.  Layers on:
   2. YOLOv8 camera-based trash detection  (bottles, cups, wrappers, cans …)
 
 Requires:
-    pip install ultralytics opencv-python-headless
+    pip install ultralytics opencv-python-headless "numpy<2"
     (plus the standard ros-humble-* turtlebot4 stack)
 """
 
 import argparse
 import json
 import math
+import threading
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -25,6 +26,8 @@ import rclpy
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from sensor_msgs.msg import Image, LaserScan
 from ultralytics import YOLO
@@ -34,6 +37,11 @@ from ultralytics import YOLO
 
 def normalize_angle(angle: float) -> float:
     return math.atan2(math.sin(angle), math.cos(angle))
+
+
+def normalize_angle_array(angles: np.ndarray) -> np.ndarray:
+    """Vectorized version for use on LaserScan angle arrays."""
+    return np.arctan2(np.sin(angles), np.cos(angles))
 
 
 def yaw_from_quaternion(x: float, y: float, z: float, w: float) -> float:
@@ -46,19 +54,12 @@ def yaw_from_quaternion(x: float, y: float, z: float, w: float) -> float:
 TRASH_CLASS_IDS: set = {
     39,  # bottle
     41,  # cup
-    44,  # spoon
-    45,  # bowl
     46,  # banana (peel)
-    76,  # scissors  (debris)
 }
-# Human-readable labels for logging
 TRASH_LABELS: Dict[int, str] = {
     39: "bottle",
     41: "cup",
-    44: "spoon",
-    45: "bowl",
     46: "banana",
-    76: "scissors",
 }
 
 
@@ -89,28 +90,43 @@ class MissionSyncDriver(Node):
         self.map_height_m = map_height_m
 
         # ── motion tuning ────────────────────────────────────────────────
-        self.max_linear = 0.24  # m/s  (TurtleBot 4 safe indoor speed)
-        self.max_angular = 1.1  # rad/s
+        self.max_linear = 0.24
+        self.max_angular = 1.1
         self.goal_tolerance_m = 0.09
         self.heading_tolerance_rad = 0.18
 
         # ── obstacle avoidance ───────────────────────────────────────────
-        self.obstacle_front_m = obstacle_front_m  # stop if anything closer
-        self.obstacle_side_m = obstacle_side_m    # side clearance for steer
-        self.front_arc_deg = 60.0                 # ±30° in front of heading
-        self.side_arc_deg = 90.0                  # ±45° for side awareness
-        self.obstacle_state = "clear"             # clear | steer_left | steer_right | blocked
+        self.obstacle_front_m = obstacle_front_m
+        self.obstacle_side_m = obstacle_side_m
+        self.front_arc_deg = 60.0
+        self.side_arc_deg = 90.0
         self.latest_scan: Optional[LaserScan] = None
+
+        # Fix #5: hysteresis — commit to a steer direction until front clears
+        self.committed_steer: Optional[str] = None  # "steer_left" | "steer_right" | None
+        self.steer_clear_front_m = obstacle_front_m * 1.4  # need extra clearance to release
+
+        # Fix #1: manual log throttle
+        self._last_block_log = 0.0
 
         # ── trash detection ──────────────────────────────────────────────
         self.yolo = YOLO(yolo_model)
         self.detection_conf = detection_conf
         self.bridge = CvBridge()
-        self.last_detect_time = 0.0
-        self.detect_interval_sec = 1.0       # run YOLO at ~1 Hz (save CPU)
-        self.pause_after_detect_sec = 2.0    # pause briefly when trash found
+        self.detect_interval_sec = 1.0
+        self.pause_after_detect_sec = 2.0
         self.pause_until: Optional[float] = None
         self.detections_log: List[Dict[str, Any]] = []
+        self._detections_dumped = False
+
+        # Fix #8: run YOLO in a background worker thread, not in the callback.
+        # The callback just hands off the latest frame; the worker picks it up.
+        self._frame_lock = threading.Lock()
+        self._latest_frame: Optional[np.ndarray] = None
+        self._frame_stamp: float = 0.0
+        self._last_processed_stamp: float = 0.0
+        self._worker_stop = threading.Event()
+        self._worker = threading.Thread(target=self._yolo_worker, daemon=True)
 
         # ── pose ─────────────────────────────────────────────────────────
         self.pose_x = 0.0
@@ -120,11 +136,28 @@ class MissionSyncDriver(Node):
         self.started_at = self.get_clock().now()
 
         # ── ROS wiring ──────────────────────────────────────────────────
+        # Fix #8: put the image sub in its own callback group so a slow
+        # imgmsg_to_cv2 call can't block /scan or /odom under a
+        # MultiThreadedExecutor.
+        sensor_group = MutuallyExclusiveCallbackGroup()
+        image_group = MutuallyExclusiveCallbackGroup()
+        timer_group = MutuallyExclusiveCallbackGroup()
+
         self.cmd_pub = self.create_publisher(Twist, "/cmd_vel", 10)
-        self.create_subscription(Odometry, "/odom", self._on_odom, 20)
-        self.create_subscription(LaserScan, "/scan", self._on_scan, 10)
-        self.create_subscription(Image, camera_topic, self._on_image, 5)
-        self.timer = self.create_timer(0.1, self._tick)
+        self.create_subscription(
+            Odometry, "/odom", self._on_odom, 20, callback_group=sensor_group
+        )
+        self.create_subscription(
+            LaserScan, "/scan", self._on_scan, 10, callback_group=sensor_group
+        )
+        self.create_subscription(
+            Image, camera_topic, self._on_image, 5, callback_group=image_group
+        )
+        self.timer = self.create_timer(
+            0.1, self._tick, callback_group=timer_group
+        )
+
+        self._worker.start()
 
         self.get_logger().info(
             f"Mission '{self.mission['name']}' loaded "
@@ -154,97 +187,132 @@ class MissionSyncDriver(Node):
         self.latest_scan = msg
 
     def _on_image(self, msg: Image) -> None:
-        """Run YOLO inference at a throttled rate."""
-        now = time.monotonic()
-        if now - self.last_detect_time < self.detect_interval_sec:
-            return
-        self.last_detect_time = now
-
+        """Fast path: just stash the frame. Worker thread does the heavy lifting."""
         try:
             frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
         except Exception as e:
             self.get_logger().warn(f"cv_bridge error: {e}")
             return
 
-        results = self.yolo(frame, conf=self.detection_conf, verbose=False)
-        if not results or results[0].boxes is None:
-            return
+        with self._frame_lock:
+            self._latest_frame = frame
+            self._frame_stamp = time.monotonic()
 
-        for box in results[0].boxes:
-            cls_id = int(box.cls[0])
-            if cls_id not in TRASH_CLASS_IDS:
+    # ── YOLO worker thread (fix #8) ─────────────────────────────────────
+
+    def _yolo_worker(self) -> None:
+        """Pull the latest frame and run inference at the throttled rate."""
+        while not self._worker_stop.is_set():
+            with self._frame_lock:
+                frame = self._latest_frame
+                stamp = self._frame_stamp
+
+            # No new frame, or we've already processed this one, or throttle not elapsed
+            if (
+                frame is None
+                or stamp == self._last_processed_stamp
+                or (time.monotonic() - self._last_processed_stamp) < self.detect_interval_sec
+            ):
+                time.sleep(0.05)
                 continue
 
-            conf = float(box.conf[0])
-            label = TRASH_LABELS.get(cls_id, f"class_{cls_id}")
-            x1, y1, x2, y2 = box.xyxy[0].tolist()
+            self._last_processed_stamp = stamp
 
-            detection = {
-                "label": label,
-                "confidence": round(conf, 3),
-                "bbox": [round(v, 1) for v in (x1, y1, x2, y2)],
-                "robot_x": round(self.pose_x, 3),
-                "robot_y": round(self.pose_y, 3),
-                "timestamp": self._mission_elapsed(),
-            }
-            self.detections_log.append(detection)
-            self.get_logger().info(
-                f"TRASH DETECTED: {label} ({conf:.0%}) @ robot pos "
-                f"({self.pose_x:.2f}, {self.pose_y:.2f})"
-            )
+            try:
+                results = self.yolo(frame, conf=self.detection_conf, verbose=False)
+            except Exception as e:
+                self.get_logger().warn(f"YOLO inference error: {e}")
+                continue
 
-            # pause so the dashboard can highlight the find
-            self.pause_until = time.monotonic() + self.pause_after_detect_sec
+            if not results or results[0].boxes is None:
+                continue
 
-    # ── obstacle avoidance ──────────────────────────────────────────────
+            found_any = False
+            for box in results[0].boxes:
+                cls_id = int(box.cls[0])
+                if cls_id not in TRASH_CLASS_IDS:
+                    continue
+
+                conf = float(box.conf[0])
+                label = TRASH_LABELS.get(cls_id, f"class_{cls_id}")
+                x1, y1, x2, y2 = box.xyxy[0].tolist()
+
+                detection = {
+                    "label": label,
+                    "confidence": round(conf, 3),
+                    "bbox": [round(v, 1) for v in (x1, y1, x2, y2)],
+                    "robot_x": round(self.pose_x, 3),
+                    "robot_y": round(self.pose_y, 3),
+                    "timestamp": self._mission_elapsed(),
+                }
+                self.detections_log.append(detection)
+                self.get_logger().info(
+                    f"TRASH DETECTED: {label} ({conf:.0%}) @ robot pos "
+                    f"({self.pose_x:.2f}, {self.pose_y:.2f})"
+                )
+                found_any = True
+
+            if found_any:
+                self.pause_until = time.monotonic() + self.pause_after_detect_sec
+
+    # ── obstacle avoidance (fixes #2 + #5) ──────────────────────────────
 
     def _evaluate_obstacles(self) -> str:
         """
         Partition the LIDAR scan into a front arc and side arcs.
         Returns one of: 'clear', 'steer_left', 'steer_right', 'blocked'.
+
+        Fix #2: use vectorized normalize_angle_array instead of scalar math.atan2.
+        Fix #5: once committed to a steer direction, hold it until the front is
+        clearly open, to prevent left/right oscillation at the arc edge.
         """
         scan = self.latest_scan
         if scan is None:
             return "clear"
 
-        ranges = np.array(scan.ranges, dtype=np.float32)
-        n = len(ranges)
+        ranges = np.asarray(scan.ranges, dtype=np.float32)
+        n = ranges.size
         if n == 0:
             return "clear"
 
-        angles = np.linspace(scan.angle_min, scan.angle_max, n)
-
-        # Replace inf / nan with a safe large value
+        angles = np.linspace(scan.angle_min, scan.angle_max, n, dtype=np.float32)
         ranges = np.where(np.isfinite(ranges), ranges, 100.0)
 
         front_half = math.radians(self.front_arc_deg / 2.0)
         side_half = math.radians(self.side_arc_deg / 2.0)
 
-        # front arc: angles near 0
-        front_mask = np.abs(normalize_angle(angles)) < front_half
-        # left arc: angles between front_half and side_half
-        left_mask = (angles > front_half) & (angles < side_half)
-        # right arc: angles between -side_half and -front_half
-        right_mask = (angles < -front_half) & (angles > -side_half)
+        norm_angles = normalize_angle_array(angles)
+        front_mask = np.abs(norm_angles) < front_half
+        left_mask = (norm_angles >= front_half) & (norm_angles < side_half)
+        right_mask = (norm_angles <= -front_half) & (norm_angles > -side_half)
 
         front_min = float(np.min(ranges[front_mask])) if np.any(front_mask) else 100.0
         left_min = float(np.min(ranges[left_mask])) if np.any(left_mask) else 100.0
         right_min = float(np.min(ranges[right_mask])) if np.any(right_mask) else 100.0
 
+        # Hysteresis: if we're already committed to a turn, only release it
+        # once the front is open past a higher threshold.
+        if self.committed_steer is not None:
+            if front_min > self.steer_clear_front_m:
+                self.committed_steer = None
+                return "clear"
+            return self.committed_steer
+
         if front_min > self.obstacle_front_m:
             return "clear"
 
-        # Something in front — decide which way to steer
+        # Front blocked — pick a direction and commit.
         if left_min > self.obstacle_side_m and right_min > self.obstacle_side_m:
-            # Both sides open — pick the more open side
-            return "steer_left" if left_min >= right_min else "steer_right"
-        if left_min > self.obstacle_side_m:
-            return "steer_left"
-        if right_min > self.obstacle_side_m:
-            return "steer_right"
+            choice = "steer_left" if left_min >= right_min else "steer_right"
+        elif left_min > self.obstacle_side_m:
+            choice = "steer_left"
+        elif right_min > self.obstacle_side_m:
+            choice = "steer_right"
+        else:
+            return "blocked"
 
-        # Hemmed in on all sides
-        return "blocked"
+        self.committed_steer = choice
+        return choice
 
     # ── mission interpolation ───────────────────────────────────────────
 
@@ -282,7 +350,6 @@ class MissionSyncDriver(Node):
         if not self.have_odom:
             return
 
-        # If paused for a detection, just stop and wait
         if self.pause_until is not None:
             if time.monotonic() < self.pause_until:
                 self.cmd_pub.publish(Twist())
@@ -295,34 +362,32 @@ class MissionSyncDriver(Node):
         dy = target_y - self.pose_y
         dist = math.hypot(dx, dy)
 
-        # Mission complete?
         if elapsed >= self.duration_sec and dist < self.goal_tolerance_m:
             self.cmd_pub.publish(Twist())
-            self._dump_detections()
             self.get_logger().info("Mission complete.")
+            # Let main's finally{} handle shutdown + dump cleanly
+            self._worker_stop.set()
             rclpy.shutdown()
             return
 
-        # ── obstacle check ──────────────────────────────────────────
-        self.obstacle_state = self._evaluate_obstacles()
+        obstacle_state = self._evaluate_obstacles()
         cmd = Twist()
 
-        if self.obstacle_state == "blocked":
-            # Full stop — wait for the path to clear
+        if obstacle_state == "blocked":
             self.cmd_pub.publish(Twist())
-            self.get_logger().throttle(
-                2000, self.get_logger().info, "Path blocked — waiting…"
-            )
+            # Fix #1: manual throttle
+            now = time.monotonic()
+            if now - self._last_block_log > 2.0:
+                self.get_logger().info("Path blocked — waiting…")
+                self._last_block_log = now
             return
 
-        if self.obstacle_state.startswith("steer_"):
-            # Rotate in place to dodge, then resume on next tick
-            direction = 1.0 if self.obstacle_state == "steer_left" else -1.0
+        if obstacle_state.startswith("steer_"):
+            direction = 1.0 if obstacle_state == "steer_left" else -1.0
             cmd.angular.z = direction * 0.6 * self.max_angular
             self.cmd_pub.publish(cmd)
             return
 
-        # ── normal waypoint tracking ────────────────────────────────
         desired_yaw = math.atan2(dy, dx)
         yaw_error = normalize_angle(desired_yaw - self.pose_yaw)
 
@@ -337,7 +402,10 @@ class MissionSyncDriver(Node):
     # ── output ──────────────────────────────────────────────────────────
 
     def _dump_detections(self) -> None:
-        """Write all trash detections to a JSON file at mission end."""
+        if self._detections_dumped:
+            return
+        self._detections_dumped = True
+
         if not self.detections_log:
             self.get_logger().info("No trash detected during mission.")
             return
@@ -349,6 +417,11 @@ class MissionSyncDriver(Node):
             f"Wrote {len(self.detections_log)} detection(s) → {out_path.resolve()}"
         )
 
+    def stop_worker(self) -> None:
+        self._worker_stop.set()
+        if self._worker.is_alive():
+            self._worker.join(timeout=2.0)
+
 
 # ─── CLI ────────────────────────────────────────────────────────────────────
 
@@ -357,22 +430,14 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
         description="TurtleBot 4 mission driver with obstacle avoidance & trash detection."
     )
-    p.add_argument("--mission", default="demo-mission.json",
-                    help="Path to mission JSON file.")
-    p.add_argument("--map-width-m", type=float, default=4.2,
-                    help="Physical floor width (m) for normalized x=1.0")
-    p.add_argument("--map-height-m", type=float, default=3.0,
-                    help="Physical floor height (m) for normalized y=1.0")
-    p.add_argument("--yolo-model", default="yolov8n.pt",
-                    help="YOLO model weights (yolov8n.pt is fast, yolov8s.pt more accurate)")
-    p.add_argument("--detection-conf", type=float, default=0.45,
-                    help="Minimum YOLO confidence for a trash detection")
-    p.add_argument("--obstacle-front-m", type=float, default=0.45,
-                    help="Stop if obstacle closer than this (meters)")
-    p.add_argument("--obstacle-side-m", type=float, default=0.30,
-                    help="Side clearance for steer decisions (meters)")
-    p.add_argument("--camera-topic", default="/oakd/rgb/preview/image_raw",
-                    help="ROS image topic from the depth camera")
+    p.add_argument("--mission", default="demo-mission.json")
+    p.add_argument("--map-width-m", type=float, default=4.2)
+    p.add_argument("--map-height-m", type=float, default=3.0)
+    p.add_argument("--yolo-model", default="yolov8n.pt")
+    p.add_argument("--detection-conf", type=float, default=0.45)
+    p.add_argument("--obstacle-front-m", type=float, default=0.45)
+    p.add_argument("--obstacle-side-m", type=float, default=0.30)
+    p.add_argument("--camera-topic", default="/oakd/rgb/preview/image_raw")
     return p.parse_args()
 
 
@@ -393,12 +458,22 @@ def main() -> None:
         obstacle_side_m=args.obstacle_side_m,
         camera_topic=args.camera_topic,
     )
+
+    # Fix #8: use a MultiThreadedExecutor so the image callback can run
+    # concurrently with /scan, /odom, and the control timer.
+    executor = MultiThreadedExecutor(num_threads=4)
+    executor.add_node(node)
+
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:
-        node.cmd_pub.publish(Twist())
+        try:
+            node.cmd_pub.publish(Twist())
+        except Exception:
+            pass
+        node.stop_worker()
         node._dump_detections()
         node.destroy_node()
         if rclpy.ok():
