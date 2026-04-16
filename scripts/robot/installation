@@ -1,3 +1,5 @@
+pip install ultralytics opencv-python-headless
+
 python3 mission_sync_driver.py \
   --mission demo-mission.json \
   --map-width-m 2.0 \
