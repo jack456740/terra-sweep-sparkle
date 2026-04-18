@@ -7,7 +7,13 @@ interface CleaningProgressProps {
   totalArea?: number;
 }
 
-export function CleaningProgress({ progress, isActive, totalArea = 500 }: CleaningProgressProps) {
+/**
+ * Cleaning Progress component.
+ * @see SR-UI-01 - Cleanup completion and progress feedback
+ * @param props - The component props.
+ * @returns The rendered Cleaning Progress component.
+ */
+export function CleaningProgress({ progress, isActive, totalArea = 500 }: CleaningProgressProps): JSX.Element {
   const cleanedArea = Math.round((progress / 100) * totalArea);
 
   return (

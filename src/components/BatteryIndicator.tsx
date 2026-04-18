@@ -1,4 +1,4 @@
-import { Battery, BatteryCharging, BatteryLow, BatteryMedium, BatteryFull, Zap } from "lucide-react";
+import { BatteryCharging, BatteryLow, BatteryMedium, BatteryFull, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface BatteryIndicatorProps {
@@ -6,20 +6,26 @@ interface BatteryIndicatorProps {
   isCharging?: boolean;
 }
 
-export function BatteryIndicator({ percentage, isCharging = false }: BatteryIndicatorProps) {
-  const getBatteryColor = () => {
+/**
+ * Battery Indicator component.
+ * @see SR-PWR-01 - Low-power awareness and return-to-base readiness
+ * @param props - The component props.
+ * @returns The rendered Battery Indicator component.
+ */
+export function BatteryIndicator({ percentage, isCharging = false }: BatteryIndicatorProps): JSX.Element {
+  const getBatteryColor = (): string => {
     if (percentage <= 20) return "bg-destructive";
     if (percentage <= 50) return "bg-warning";
     return "bg-success";
   };
 
-  const getBatteryTextColor = () => {
+  const getBatteryTextColor = (): string => {
     if (percentage <= 20) return "text-destructive";
     if (percentage <= 50) return "text-warning";
     return "text-success";
   };
 
-  const getBatteryIcon = () => {
+  const getBatteryIcon = (): typeof BatteryCharging => {
     if (isCharging) return BatteryCharging;
     if (percentage <= 20) return BatteryLow;
     if (percentage <= 50) return BatteryMedium;

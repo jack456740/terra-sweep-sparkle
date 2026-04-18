@@ -7,7 +7,14 @@ interface RobotStatusCardProps {
   location?: string;
 }
 
-const statusConfig: Record<RobotStatus, { label: string; color: string; bgColor: string; animate: boolean }> = {
+interface StatusConfig {
+  label: string;
+  color: string;
+  bgColor: string;
+  animate: boolean;
+}
+
+const statusConfig: Record<RobotStatus, StatusConfig> = {
   idle: {
     label: "Idle",
     color: "text-muted-foreground",
@@ -40,7 +47,14 @@ const statusConfig: Record<RobotStatus, { label: string; color: string; bgColor:
   },
 };
 
-export function RobotStatusCard({ status, location = LOCATIONS.HOME_BASE }: RobotStatusCardProps) {
+/**
+ * Robot Status Card component.
+ * @see SR-UI-01 - Status notifications and user-facing operational state
+ * @see SR-UI-02 - Real-time status/location visibility
+ * @param props - The component props.
+ * @returns The rendered Robot Status Card component.
+ */
+export function RobotStatusCard({ status, location = LOCATIONS.HOME_BASE }: RobotStatusCardProps): JSX.Element {
   const config = statusConfig[status];
   const isConnected = status !== ROBOT_STATUS.OFFLINE;
 

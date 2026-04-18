@@ -1,6 +1,10 @@
 import { Bot, ChevronDown } from "lucide-react";
 
-export function HeroSection() {
+/**
+ * Hero Section component.
+ * @returns The rendered Hero Section component.
+ */
+export function HeroSection(): JSX.Element {
   return (
     <section id="home" className="min-h-screen flex flex-col items-center justify-center relative gradient-hero px-4 py-20">
       <div className="text-center max-w-3xl mx-auto animate-fade-in">

@@ -43,7 +43,11 @@ const stories = [
   },
 ];
 
-export function UserStoriesSection() {
+/**
+ * User Stories Section component.
+ * @returns The rendered User Stories Section component.
+ */
+export function UserStoriesSection(): JSX.Element {
   return (
     <section id="stories" className="py-20 px-4 gradient-hero">
       <div className="container mx-auto max-w-6xl">

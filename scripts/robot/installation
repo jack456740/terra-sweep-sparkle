@@ -1,0 +1,11 @@
+pip install ultralytics opencv-python-headless
+
+python3 mission_sync_driver.py \
+  --mission demo-mission.json \
+  --map-width-m 2.0 \
+  --map-height-m 4.0 \
+  --yolo-model yolov8n.pt \
+  --detection-conf 0.45 \
+  --obstacle-front-m 0.45 \
+  --obstacle-side-m 0.30 \
+  --camera-topic /oakd/rgb/preview/image_raw

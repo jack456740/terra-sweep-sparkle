@@ -16,6 +16,10 @@ const DropdownMenuSub = DropdownMenuPrimitive.Sub;
 
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
 
+/**
+ * Dropdown Menu Sub Trigger component.
+ * @returns The rendered Dropdown Menu Sub Trigger component.
+ */
 const DropdownMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubTrigger>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
@@ -37,6 +41,10 @@ const DropdownMenuSubTrigger = React.forwardRef<
 ));
 DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName;
 
+/**
+ * Dropdown Menu Sub Content component.
+ * @returns The rendered Dropdown Menu Sub Content component.
+ */
 const DropdownMenuSubContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>
@@ -52,6 +60,10 @@ const DropdownMenuSubContent = React.forwardRef<
 ));
 DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayName;
 
+/**
+ * Dropdown Menu Content component.
+ * @returns The rendered Dropdown Menu Content component.
+ */
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
@@ -70,6 +82,10 @@ const DropdownMenuContent = React.forwardRef<
 ));
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
+/**
+ * Dropdown Menu Item component.
+ * @returns The rendered Dropdown Menu Item component.
+ */
 const DropdownMenuItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
@@ -88,6 +104,10 @@ const DropdownMenuItem = React.forwardRef<
 ));
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
 
+/**
+ * Dropdown Menu Checkbox Item component.
+ * @returns The rendered Dropdown Menu Checkbox Item component.
+ */
 const DropdownMenuCheckboxItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
@@ -111,6 +131,10 @@ const DropdownMenuCheckboxItem = React.forwardRef<
 ));
 DropdownMenuCheckboxItem.displayName = DropdownMenuPrimitive.CheckboxItem.displayName;
 
+/**
+ * Dropdown Menu Radio Item component.
+ * @returns The rendered Dropdown Menu Radio Item component.
+ */
 const DropdownMenuRadioItem = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
@@ -133,6 +157,10 @@ const DropdownMenuRadioItem = React.forwardRef<
 ));
 DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName;
 
+/**
+ * Dropdown Menu Label component.
+ * @returns The rendered Dropdown Menu Label component.
+ */
 const DropdownMenuLabel = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {
@@ -147,6 +175,10 @@ const DropdownMenuLabel = React.forwardRef<
 ));
 DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
 
+/**
+ * Dropdown Menu Separator component.
+ * @returns The rendered Dropdown Menu Separator component.
+ */
 const DropdownMenuSeparator = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>
@@ -155,6 +187,12 @@ const DropdownMenuSeparator = React.forwardRef<
 ));
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
 
+/**
+ * Dropdown Menu Shortcut component.
+ *  * 
+ *  * @param props - The component props.
+ * @returns The rendered Dropdown Menu Shortcut component.
+ */
 const DropdownMenuShortcut = ({ className, ...props }: React.HTMLAttributes<HTMLSpanElement>) => {
   return <span className={cn("ml-auto text-xs tracking-widest opacity-60", className)} {...props} />;
 };

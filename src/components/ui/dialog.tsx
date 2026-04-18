@@ -12,6 +12,10 @@ const DialogPortal = DialogPrimitive.Portal;
 
 const DialogClose = DialogPrimitive.Close;
 
+/**
+ * Dialog Overlay component.
+ * @returns The rendered Dialog Overlay component.
+ */
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -27,6 +31,10 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+/**
+ * Dialog Content component.
+ * @returns The rendered Dialog Content component.
+ */
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
@@ -51,16 +59,32 @@ const DialogContent = React.forwardRef<
 ));
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
+/**
+ * Dialog Header component.
+ *  * 
+ *  * @param props - The component props.
+ * @returns The rendered Dialog Header component.
+ */
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />
 );
 DialogHeader.displayName = "DialogHeader";
 
+/**
+ * Dialog Footer component.
+ *  * 
+ *  * @param props - The component props.
+ * @returns The rendered Dialog Footer component.
+ */
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)} {...props} />
 );
 DialogFooter.displayName = "DialogFooter";
 
+/**
+ * Dialog Title component.
+ * @returns The rendered Dialog Title component.
+ */
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
@@ -73,6 +97,10 @@ const DialogTitle = React.forwardRef<
 ));
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
+/**
+ * Dialog Description component.
+ * @returns The rendered Dialog Description component.
+ */
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>

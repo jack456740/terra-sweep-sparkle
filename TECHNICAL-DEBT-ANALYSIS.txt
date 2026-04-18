@@ -272,38 +272,38 @@ The current dashboard prototype provides:
 
 ---
 
-### Item 9: Vendor Lock-in to Lovable.dev Platform
+### Item 9: Vendor Lock-in to a Hosted Prototyping Platform
 **Category:** Architectural Debt  
 **Related Requirements:** All requirements (platform dependency affects entire system)  
 **Related Design Components:** All DC-XX components (deployment platform affects all components)  
 **Priority:** 🔴 **CRITICAL - Blocks Production Independence**
 
-**Description:** The application is currently dependent on Lovable.dev platform for development and deployment. The codebase includes `lovable-tagger` package dependency, Lovable-specific documentation in README.md, and references to Lovable.dev in meta tags. The application cannot be deployed independently or run as a standalone "real" application without Lovable.dev infrastructure. This creates vendor lock-in and prevents the application from being a production-ready, independent system.
+**Description:** The application was previously dependent on a hosted prototyping platform for development and deployment. The codebase included a platform-specific tagging dependency, platform-specific documentation in README.md, and platform-branded OpenGraph/Twitter meta tags. This vendor coupling prevented independent deployment as a standalone \"real\" application.
 
 **Impact on Requirements:**
 - **All SR-XX Requirements:** Cannot deploy independently, blocking all production requirements
 - **All AC-XX User Stories:** Application cannot function as standalone system
 - **Production Readiness:** Application is not a "real" app - it's a prototype tied to development platform
 - **Deployment Flexibility:** Cannot deploy to Vercel, Netlify, AWS, or other independent platforms
-- **Development Workflow:** Team members must use Lovable.dev to work on the project
-- **Vendor Risk:** If Lovable.dev changes or discontinues service, entire project is at risk
+- **Development Workflow:** Team members were forced into a vendor-specific workflow
+- **Vendor Risk:** If the vendor changes or discontinues service, the project is at risk
 - **CI/CD:** Cannot set up independent CI/CD pipelines
 - **Professional Credibility:** Application appears as a prototype, not a production system
 
 **Remediation Plan:**
-1. Remove `lovable-tagger` dependency from `package.json` devDependencies
+1. Remove platform-specific tagger dependency from `package.json` devDependencies
 2. Remove `componentTagger()` import and usage from `vite.config.ts`
 3. Update `package.json` metadata:
    - Change name from generic "vite_react_shadcn_ts" to "terra-sweep-sparkle"
    - Add proper description, version, and project metadata
 4. Rewrite `README.md`:
-   - Remove all Lovable.dev references and instructions
+   - Remove all vendor-specific references and instructions
    - Add standard npm/yarn installation instructions
    - Add independent deployment instructions (Vercel, Netlify, etc.)
    - Add project-specific documentation
 5. Update `index.html` meta tags:
-   - Remove Lovable.dev OpenGraph images
-   - Remove Lovable Twitter references
+   - Remove vendor-branded OpenGraph images
+   - Remove vendor Twitter references
    - Add project-specific branding
 6. Set up independent CI/CD:
    - Create GitHub Actions workflows (`.github/workflows/ci.yml`, `deploy.yml`)
@@ -313,23 +313,23 @@ The current dashboard prototype provides:
    - `.env.example` for environment variables
    - Deployment documentation
 8. Verify independence:
-   - Test build without Lovable dependencies
+   - Test build without vendor-specific dependencies
    - Test deployment to independent platform
    - Verify all functionality works post-decoupling
 
 **Files Affected:**
-- `package.json` (remove lovable-tagger, update metadata)
+- `package.json` (remove platform-specific tagger, update metadata)
 - `vite.config.ts` (remove componentTagger import and usage)
-- `README.md` (complete rewrite - remove Lovable references)
+- `README.md` (complete rewrite - remove vendor references)
 - `index.html` (update meta tags)
 - `.github/workflows/` (new - CI/CD pipelines)
 - `vercel.json` or `netlify.toml` (new - deployment config)
 - `.env.example` (new - environment variables)
 
 **Success Criteria:**
-- Application builds and runs without any Lovable dependencies
+- Application builds and runs without any vendor-specific dependencies
 - Application can be deployed to Vercel, Netlify, or other independent platforms
-- No references to Lovable.dev in codebase or documentation
+- No vendor-specific references remain in codebase or documentation
 - CI/CD pipeline works independently
 - Application functions as standalone "real" application
 
@@ -368,7 +368,7 @@ The current dashboard prototype provides:
 **Related Requirements:** SR-UI-02, SR-DATA-02, AC 2.3, AC 3.4, AC 3.5  
 **Related Design Components:** DC-COMM-02 (Real-time Telemetry), DC-SW-05 (Data Export API)
 
-**Description:** While the current codebase doesn't directly process user prompts, the application is built on Lovable.dev (an AI development platform) and may integrate AI features in the future (e.g., natural language robot commands for AC 1.1, AI-powered scheduling for AC 1.2). Without proper input validation and sanitization, the system is vulnerable to prompt injection attacks where malicious users could inject commands that manipulate AI behavior. Additionally, robot status data (location, battery, cleaning progress) is currently stored only in client-side state with no encryption or access controls, creating data leakage risks. This is particularly critical for beach security (AC 2.3) and environmental data (AC 3.4, 3.5) use cases.
+**Description:** While the current codebase doesn't directly process user prompts, the application was initially generated and iterated using AI-assisted tooling and may integrate AI features in the future (e.g., natural language robot commands for AC 1.1, AI-powered scheduling for AC 1.2). Without proper input validation and sanitization, the system is vulnerable to prompt injection attacks where malicious users could inject commands that manipulate AI behavior. Additionally, robot status data (location, battery, cleaning progress) is currently stored only in client-side state with no encryption or access controls, creating data leakage risks. This is particularly critical for beach security (AC 2.3) and environmental data (AC 3.4, 3.5) use cases.
 
 **Impact:**
 - Malicious prompts could cause robot to perform unauthorized actions (violates AC 2.2 geo-fencing)
@@ -392,30 +392,29 @@ The current dashboard prototype provides:
 
 ---
 
-### Risk 3: Dependency on Lovable.dev Platform and lovable-tagger ⚠️ IN PROGRESS
+### Risk 3: Dependency on a Hosted Prototyping Platform and Platform-specific Tooling
 **Category:** Dependency Risk  
 **Related Requirements:** All requirements (platform dependency affects entire system)  
 **Related Design Components:** All DC-XX components (deployment platform affects all components)  
-**Status:** 🔄 **DECOUPLING IN PROGRESS** - See `LOVABLE-DECOUPLING-PLAN.md`
+**Status:** ✅ **DECOUPLED** (vendor-specific tooling removed)
 
-**Description:** The application had a dependency on `lovable-tagger` package and was tightly coupled to Lovable.dev platform for deployment and development workflow. This created vendor lock-in and risked development workflow disruption if the platform changed or discontinued service.
+**Description:** The application previously depended on vendor-specific tooling and a hosted prototyping workflow. This created vendor lock-in and risked development disruption if the vendor changed or discontinued service.
 
 **Impact (Before Decoupling):**
-- Development workflow disruption if lovable-tagger breaks (blocks all SR-UI-XX, SR-DATA-XX)
-- Deployment pipeline failure if Lovable.dev platform changes (blocks production deployment)
+- Development workflow disruption if vendor tooling breaks (blocks all SR-UI-XX, SR-DATA-XX)
+- Deployment pipeline failure if the platform changes (blocks production deployment)
 - Inability to develop locally if platform dependencies fail (blocks AC 1.5, 2.3, 3.4, 3.5)
 - Vendor lock-in preventing migration to other platforms
 - Potential build failures on future dependency updates
 - Cannot fulfill any system requirements if platform fails
 
 **Mitigation (Completed):**
-1. ✅ Removed `lovable-tagger` from `vite.config.ts` and `package.json`
+1. ✅ Removed platform-specific tagger from `vite.config.ts` and `package.json`
 2. ✅ Updated package name from generic "vite_react_shadcn_ts" to "terra-sweep-sparkle"
-3. ✅ Rewrote README.md with project-specific documentation (removed Lovable references)
-4. ✅ Updated meta tags in `index.html` (removed Lovable branding)
-5. ⏳ Set up independent CI/CD pipeline (GitHub Actions) - **TODO**
-6. ⏳ Create deployment configuration for Vercel/Netlify - **TODO**
-7. ⏳ Document independent deployment process - **TODO**
+3. ✅ Rewrote README.md with project-specific documentation (removed vendor references)
+4. ✅ Updated meta tags in `index.html` (removed vendor branding)
+5. ✅ Set up independent CI/CD pipeline (GitHub Actions)
+6. ✅ Created deployment configuration (Vercel + `.env.example`)
 
 **Remaining Tasks:**
 - Set up GitHub Actions workflow for CI/CD
@@ -534,7 +533,7 @@ These items will be converted to GitHub Issues with:
 - **DC-HW-01, DC-HW-02:** Battery and docking systems (Items 6, 7)
 
 **Recommended Priority Order:**
-1. **Vendor Lock-in to Lovable.dev Platform** (🔴 CRITICAL - blocks all production deployment, prevents application from being "real" standalone app)
+1. **Vendor Lock-in to a Hosted Prototyping Platform** (🔴 CRITICAL - blocks all production deployment, prevents application from being "real" standalone app)
 2. **Missing Backend API Integration Layer** (blocks SR-UI-01, SR-UI-02, SR-DATA-01, SR-DATA-02, all AC 2.3, 3.4, 3.5)
 3. **Complete Absence of Test Coverage** (blocks verification of all requirements compliance)
 4. **Monolithic State Management** (blocks SR-UI-01, SR-UI-02, scalability for multiple robots)

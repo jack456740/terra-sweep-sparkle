@@ -40,6 +40,7 @@ export const DEPLOY_STATE = {
  */
 export const LOCATIONS = {
   HOME_BASE: "Home Base",
+  MAIN_AREA: "Main Area",
   ZONE_A_NORTH: "Zone A - North Side",
   RETURNING: "Returning...",
   RETURNING_LOW_BATTERY: "Returning (Low Battery)",

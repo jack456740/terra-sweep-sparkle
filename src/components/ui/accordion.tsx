@@ -6,6 +6,10 @@ import { cn } from "@/lib/utils";
 
 const Accordion = AccordionPrimitive.Root;
 
+/**
+ * Accordion Item component.
+ * @returns The rendered Accordion Item component.
+ */
 const AccordionItem = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>
@@ -14,6 +18,10 @@ const AccordionItem = React.forwardRef<
 ));
 AccordionItem.displayName = "AccordionItem";
 
+/**
+ * Accordion Trigger component.
+ * @returns The rendered Accordion Trigger component.
+ */
 const AccordionTrigger = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger>
@@ -34,6 +42,10 @@ const AccordionTrigger = React.forwardRef<
 ));
 AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName;
 
+/**
+ * Accordion Content component.
+ * @returns The rendered Accordion Content component.
+ */
 const AccordionContent = React.forwardRef<
   React.ElementRef<typeof AccordionPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>

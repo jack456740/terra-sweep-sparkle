@@ -23,7 +23,11 @@ const features = [
   },
 ];
 
-export function ProjectSection() {
+/**
+ * Project Section component.
+ * @returns The rendered Project Section component.
+ */
+export function ProjectSection(): JSX.Element {
   return (
     <section id="project" className="py-20 px-4 bg-card">
       <div className="container mx-auto max-w-6xl">
@@ -56,7 +60,7 @@ export function ProjectSection() {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {features.map((feature, index) => (
+          {features.map((feature) => (
             <div
               key={feature.title}
               className="glass rounded-2xl p-6 shadow-card hover:shadow-glow transition-all duration-300 hover:-translate-y-1"

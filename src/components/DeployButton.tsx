@@ -9,7 +9,14 @@ interface DeployButtonProps {
   disabled?: boolean;
 }
 
-export function DeployButton({ state, onDeploy, onStop, disabled = false }: DeployButtonProps) {
+/**
+ * Deploy Button component.
+ * @see SR-AUTO-01 - Autonomous operation scheduling/deployment control
+ * @see SR-PWR-01 - Return workflow initiation from dashboard control
+ * @param props - The component props.
+ * @returns The rendered Deploy Button component.
+ */
+export function DeployButton({ state, onDeploy, onStop, disabled = false }: DeployButtonProps): JSX.Element {
   const isDeployed = state === DEPLOY_STATE.DEPLOYED || state === DEPLOY_STATE.DEPLOYING;
 
   return (

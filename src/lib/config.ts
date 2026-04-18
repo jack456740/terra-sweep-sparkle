@@ -92,13 +92,73 @@ export const TIMING_CONFIG = {
   CLEANING_INTERVAL_MS: 2000,
 } as const;
 
+export type AppEnvironment = "development" | "staging" | "production";
+
+export interface TimingConfig {
+  deployTimeoutMs: number;
+  returnTimeoutMs: number;
+  cleaningIntervalMs: number;
+}
+
+export interface BatteryConfig {
+  lowThreshold: number;
+  initialPercentage: number;
+  decrementPerInterval: number;
+  maxPercentage: number;
+  minPercentage: number;
+}
+
+export interface CleaningConfig {
+  initialProgress: number;
+  maxProgress: number;
+  progressIncrement: number;
+}
+
+export interface AppConfig {
+  timing: TimingConfig;
+  battery: BatteryConfig;
+  cleaning: CleaningConfig;
+}
+
+export interface ApiEnvironmentConfig {
+  environment: AppEnvironment;
+  apiBaseUrl: string;
+  wsUrl: string;
+}
+
+const DEFAULT_API_ENDPOINTS: Record<AppEnvironment, { apiBaseUrl: string; wsUrl: string }> = {
+  development: {
+    apiBaseUrl: "http://localhost:3000/api",
+    wsUrl: "ws://localhost:3000",
+  },
+  staging: {
+    apiBaseUrl: "https://staging-api.terra-sweep-sparkle.com/api",
+    wsUrl: "wss://staging-api.terra-sweep-sparkle.com",
+  },
+  production: {
+    apiBaseUrl: "https://api.terra-sweep-sparkle.com/api",
+    wsUrl: "wss://api.terra-sweep-sparkle.com",
+  },
+};
+
+function resolveAppEnvironment(): AppEnvironment {
+  const rawEnv = (import.meta.env.VITE_APP_ENV ?? import.meta.env.MODE ?? "development").toLowerCase();
+
+  if (rawEnv === "production" || rawEnv === "staging" || rawEnv === "development") {
+    return rawEnv;
+  }
+
+  console.warn(`Invalid app environment '${rawEnv}'. Falling back to 'development'.`);
+  return "development";
+}
+
 /**
  * Environment-based Configuration
  * 
  * Allows configuration values to be overridden via environment variables.
  * Falls back to default values if environment variables are not set.
  */
-export const getConfig = () => {
+export const getConfig = (): AppConfig => {
   const deployTimeout = import.meta.env.VITE_DEPLOY_TIMEOUT_MS 
     ? Number(import.meta.env.VITE_DEPLOY_TIMEOUT_MS) 
     : TIMING_CONFIG.DEPLOY_TIMEOUT_MS;
@@ -149,5 +209,31 @@ export const getConfig = () => {
       maxProgress: CLEANING_CONFIG.MAX_PROGRESS,
       progressIncrement: CLEANING_CONFIG.PROGRESS_INCREMENT,
     },
+  };
+};
+
+export const getApiEnvironmentConfig = (): ApiEnvironmentConfig => {
+  const environment = resolveAppEnvironment();
+  const defaults = DEFAULT_API_ENDPOINTS[environment];
+  const envSpecificApiBaseUrl =
+    environment === "staging"
+      ? import.meta.env.VITE_STAGING_API_BASE_URL
+      : environment === "production"
+        ? import.meta.env.VITE_PRODUCTION_API_BASE_URL
+        : undefined;
+  const envSpecificWsUrl =
+    environment === "staging"
+      ? import.meta.env.VITE_STAGING_WS_URL
+      : environment === "production"
+        ? import.meta.env.VITE_PRODUCTION_WS_URL
+        : undefined;
+
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || envSpecificApiBaseUrl || defaults.apiBaseUrl;
+  const wsUrl = import.meta.env.VITE_WS_URL || envSpecificWsUrl || defaults.wsUrl;
+
+  return {
+    environment,
+    apiBaseUrl,
+    wsUrl,
   };
 };

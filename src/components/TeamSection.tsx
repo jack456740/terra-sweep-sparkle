@@ -2,12 +2,15 @@ import { cn } from "@/lib/utils";
 
 const teamMembers = [
   { name: "Alvin Rogers", role: "Team Member", initials: "AR" },
-  { name: "Carolyn Winn", role: "Team Member", initials: "CW" },
   { name: "Nicasio Smith", role: "Team Member", initials: "NS" },
   { name: "Jaleel Williams", role: "Team Member", initials: "JW" },
 ];
 
-export function TeamSection() {
+/**
+ * Team Section component.
+ * @returns The rendered Team Section component.
+ */
+export function TeamSection(): JSX.Element {
   return (
     <section id="team" className="py-20 px-4 bg-card">
       <div className="container mx-auto max-w-6xl">
